@@ -34,7 +34,7 @@ int minimumRange = 2; // Minimum range of sensor
 MedianFilter medianUltra(3,0);
 
 //Debuggin Delays + timer + state 
-unsigned long TimerA; 
+unsigned long timerA; 
 int ledState;
 #define MOVING_BLINK_DELAY 500
 #define TURNING_BLINK_DELAY 50
@@ -98,7 +98,7 @@ void loop() {
       break;
     case APPROACHING_EDGE:
      // runMotorsSlow();
-     stopMotors();
+      stopMotors();
       break;
     case TURNING:
       turningProcedure();
@@ -240,22 +240,29 @@ void checkForObstacleStop(){
 if(motorDirection == FORWARD){
       if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 5){
         state = TURNING;
+        timerA = millis();
       }
    }
    else if(motorDirection == BACKWARD){
       if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 5){
         state = TURNING;
+        timerA = millis();
       }
    }
 }
 
 void checkOrientationTurnCompleted(){
-  if(checkSwitch()){
-//      
-     motorDirection=!motorDirection;
+  unsigned long currentTime = millis();
+  if(timerA - currentTime > 200){
+      motorDirection=!motorDirection;
      state = MOVING;
-//  turnRight(STANDARD_SPEED);
   }
+//  if(checkSwitch()){
+////      
+//     motorDirection=!motorDirection;
+//     state = MOVING;
+////  turnRight(STANDARD_SPEED);
+//  }
 }
 
 void orientationProcedure(){
