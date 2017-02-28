@@ -1,6 +1,6 @@
 #include <MedianFilter.h>
 
-enum states {CALIBRATING, MOVING, APPROACHING_EDGE, TURNING, ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, FINISHED};
+enum states {CALIBRATING, MOVING, APPROACHING_EDGE, TURNING, STOP,ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, FINISHED};
 int state = 0;
 
 //#DEFINE LEFT_ULTRASONIC_SENSOR
@@ -45,8 +45,9 @@ int ledState;
 
 #define SWITCH_PIN 12
 
-#define STANDARD_SPEED 150
+#define STANDARD_SPEED 120
 #define SLOW_SPEED 100
+#define HIGH_SPEED 120
 
 int currentDirection = 1;
 
@@ -103,6 +104,9 @@ void loop() {
     case TURNING:
       turningProcedure();
       break;
+    case STOP:
+      stopMotors();
+      break;
     case ORIENTING_TO_SEPARATOR:
       orientationProcedure();
       break;
@@ -156,10 +160,10 @@ void runMotorsSlow(){
 
 void turningProcedure(){
 if(motorDirection == FORWARD){
-turnRight(STANDARD_SPEED);
+  turnRight(HIGH_SPEED);
 }
 else{
-turnLeft(STANDARD_SPEED);
+  turnLeft(HIGH_SPEED);
 }
 //delay(1000);
 //motorDirection=!motorDirection;
@@ -205,6 +209,9 @@ void checkSensorsForStateChange(){
       isSeparatorCrossed();
       break;
   }
+  if(checkSwitch()){
+    state = STOP;
+  }
 }
 void checkCrossSeparatorReady(){
   
@@ -212,13 +219,13 @@ void checkCrossSeparatorReady(){
 
 void checkForObstacle(){
    if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 10){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 20){
        state = APPROACHING_EDGE;
        //  state = TURNING;
       }
    }
    else if(motorDirection == BACKWARD){
-      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 10){
+      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 20){
        // state = TURNING;
         state = APPROACHING_EDGE;
       }
@@ -238,13 +245,13 @@ void checkForObstacleStop(){
 //    currentDirection = 0;
 //  }
 if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 5){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 20){
         state = TURNING;
         timerA = millis();
       }
    }
    else if(motorDirection == BACKWARD){
-      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 5){
+      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 8){
         state = TURNING;
         timerA = millis();
       }
@@ -253,7 +260,7 @@ if(motorDirection == FORWARD){
 
 void checkOrientationTurnCompleted(){
   unsigned long currentTime = millis();
-  if(timerA - currentTime > 200){
+  if((currentTime - timerA) > 200){
       motorDirection=!motorDirection;
      state = MOVING;
   }

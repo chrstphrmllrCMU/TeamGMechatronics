@@ -13,9 +13,11 @@
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
-#define STANDARD_SPEED 90
+#define STANDARD_SPEED 110
+#define HIGH_SPEED 110
 #define SLOW_SPEED 100
 
+unsigned long timerA;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
@@ -62,16 +64,35 @@ void readSerialMotors(){
 //        reverseDirection();
         break;
      case '7':
-        turnLeft();
+         timerA = millis();
+         setLeftMotorBackward(HIGH_SPEED);
+         setRightMotorForward(HIGH_SPEED);
+         waitTurn();
+         break;
      case '8':
-        turnRight();
+         timerA = millis();
+         setLeftMotorForward(HIGH_SPEED);
+         setRightMotorBackward(HIGH_SPEED);
+         waitTurn();
+        break;
      case '9':
         setLeftMotorForward(SLOW_SPEED);
         setRightMotorForward(SLOW_SPEED);
+        break;
     } 
   }
+  
 }
 
+void waitTurn(){
+    unsigned long currentTime = millis();
+   while((currentTime - timerA) < 500){
+    currentTime = millis();
+    }
+   Serial.println("Hello");
+   stopMotors();
+   
+}
 void turnRight(){
   setLeftMotorForward(STANDARD_SPEED);
   setRightMotorBackward(STANDARD_SPEED);

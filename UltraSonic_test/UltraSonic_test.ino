@@ -22,7 +22,7 @@ void setup() {
 }
 
 void loop() { 
-   getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
 }
 
 float getUltraSensorValue(int echoPin){
