@@ -1,7 +1,8 @@
 #include <MedianFilter.h>
 
-enum states {CALIBRATING, MOVING, APPROACHING_EDGE, TURNING, STOP,ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, FINISHED};
+enum states {CALIBRATING, MOVING, MOVING_TO_MOVING, APPROACHING_EDGE, TURNING, STOP,ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, FINISHED};
 int state = 0;
+unsigned long MOVING_TIMER;
 
 //#DEFINE LEFT_ULTRASONIC_SENSOR
 //#DEFINE RIGHT ULTRASONIC_SENSOR
@@ -26,6 +27,9 @@ int motorDirection = FORWARD;
 #define FORWARD_ULTRASONIC_SENSOR 9
 #define BACKWARD_ULTRASONIC_SENSOR 10 
 #define LEFT_SIDE_ULTRASONIC_SENSOR 11
+
+#define FORWARD_ULTRA_DISTANCE 16
+#define BACKWARD_ULTRA_DISTANCE 18.5
 //#define RIGHT_SIDE_ULTRASONIC_SENSOR 13
 #define trigPin 8 // Trigger Pin
 float duration, distance; // Duration used to calculate distance
@@ -46,7 +50,7 @@ int ledState;
 #define SWITCH_PIN 12
 
 #define STANDARD_SPEED 120
-#define SLOW_SPEED 100
+#define SLOW_SPEED 70
 #define HIGH_SPEED 120
 
 int currentDirection = 1;
@@ -97,9 +101,13 @@ void loop() {
       runMotors();
       runFans();
       break;
+    case MOVING_TO_MOVING:
+      prepMotors();
+      break;
     case APPROACHING_EDGE:
      // runMotorsSlow();
       stopMotors();
+      delay(400);
       break;
     case TURNING:
       turningProcedure();
@@ -132,14 +140,26 @@ void startFan(){
 
 }
 
+void prepMotors(){
+   if(motorDirection == FORWARD){
+    setLeftMotorForward(STANDARD_SPEED);
+    setRightMotorForward(STANDARD_SPEED);
+  }
+  else if(motorDirection == BACKWARD){
+    setLeftMotorBackward(STANDARD_SPEED);
+    setRightMotorBackward(STANDARD_SPEED);
+  }
+  delay(500);
+}
+
 void runMotors(){
   if(motorDirection == FORWARD){
     setLeftMotorForward(SLOW_SPEED);
     setRightMotorForward(SLOW_SPEED);
   }
   else if(motorDirection == BACKWARD){
-    setLeftMotorBackward(STANDARD_SPEED);
-    setRightMotorBackward(STANDARD_SPEED);
+    setLeftMotorBackward(SLOW_SPEED);
+    setRightMotorBackward(SLOW_SPEED);
   }
 }
 
@@ -160,10 +180,10 @@ void runMotorsSlow(){
 
 void turningProcedure(){
 if(motorDirection == FORWARD){
-  turnRight(HIGH_SPEED);
+  turnLeft(HIGH_SPEED);
 }
 else{
-  turnLeft(HIGH_SPEED);
+  turnRight(HIGH_SPEED);
 }
 //delay(1000);
 //motorDirection=!motorDirection;
@@ -196,6 +216,9 @@ void checkSensorsForStateChange(){
       checkForObstacle();
       isFinished();
       break;
+    case MOVING_TO_MOVING:
+      timePrepMotors();
+      break;
     case APPROACHING_EDGE:
       checkForObstacleStop();
       break;
@@ -219,13 +242,13 @@ void checkCrossSeparatorReady(){
 
 void checkForObstacle(){
    if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 20){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
        state = APPROACHING_EDGE;
        //  state = TURNING;
       }
    }
    else if(motorDirection == BACKWARD){
-      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 20){
+      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
        // state = TURNING;
         state = APPROACHING_EDGE;
       }
@@ -245,24 +268,24 @@ void checkForObstacleStop(){
 //    currentDirection = 0;
 //  }
 if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < 20){
+      //if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
         state = TURNING;
         timerA = millis();
-      }
+    //  }
    }
    else if(motorDirection == BACKWARD){
-      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < 8){
+      //if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
         state = TURNING;
         timerA = millis();
-      }
+      //}
    }
 }
 
 void checkOrientationTurnCompleted(){
   unsigned long currentTime = millis();
-  if((currentTime - timerA) > 200){
+  if((currentTime - timerA) > 100){
       motorDirection=!motorDirection;
-     state = MOVING;
+     state = MOVING_TO_MOVING;
   }
 //  if(checkSwitch()){
 ////      
@@ -282,7 +305,7 @@ void isSeparatorCrossed(){
 
 void checkGoSignal(){
   if(checkSwitch()){
-    state = MOVING;
+    state = MOVING_TO_MOVING;
   }
 }
 
@@ -312,6 +335,12 @@ boolean checkSwitch(){
   return false;
 }
 
+void timePrepMotors(){
+//  unsigned long currentTime = millis();
+//  if((currentTime - MOVING_TIMER)>=500){
+    state = MOVING;
+//  }
+}
 
 float getUltraSensorValue(int echoPin){
   for (int i =0; i<3; i++){

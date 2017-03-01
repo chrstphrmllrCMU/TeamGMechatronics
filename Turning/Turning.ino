@@ -15,7 +15,7 @@ int leftMotorDirection,rightMotorDirection;
 
 #define STANDARD_SPEED 110
 #define HIGH_SPEED 110
-#define SLOW_SPEED 100
+#define SLOW_SPEED 50
 
 unsigned long timerA;
 void setup() {
@@ -44,6 +44,9 @@ void readSerialMotors(){
       case '1':
         setLeftMotorForward(STANDARD_SPEED);
         setRightMotorForward(STANDARD_SPEED);
+        delay(500);
+        setLeftMotorForward(SLOW_SPEED);
+        setRightMotorForward(SLOW_SPEED);
         break;
       case '2':
         setLeftMotorBackward(STANDARD_SPEED);

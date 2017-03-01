@@ -22,7 +22,9 @@ void setup() {
 }
 
 void loop() { 
-   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
+   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR)  ;
+   getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+   delay(500);
 }
 
 float getUltraSensorValue(int echoPin){
@@ -39,7 +41,7 @@ float getUltraSensorValue(int echoPin){
 
    //Calculate the distance (in cm) based on the speed of sound.
    distance = duration/58.2;
-   
+  }
    if (distance >= maximumRange || distance <= minimumRange){
      /* Send a negative number to computer and Turn LED ON 
      to indicate "out of range" */
@@ -50,8 +52,7 @@ float getUltraSensorValue(int echoPin){
    else {
      /* Send the distance to the computer using Serial protocol, and
      turn LED OFF to indicate successful reading. */
-     Serial.println("ultrasonic:"+String(distance)+ " cm");
+     Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
-  }
    return distance;
 }
