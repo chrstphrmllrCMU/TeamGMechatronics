@@ -8,7 +8,7 @@
 #define L2PinRight 7
 
 #define FORWARD 1
-#define BACKWARD 0 
+#define BACKWARD 0
 
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
@@ -23,6 +23,7 @@ unsigned long timerA;
 #include "quaternionFilters.h"
 #include "MPU9250.h"
 MPU9250 myIMU;
+#define Z_AXIS_GYRO_SENSITIVITY_CONSTANT 70
 
 // Pin definitions
 int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
@@ -228,12 +229,13 @@ void waitNinetyDegrees(){
   float current,prev = 0;
   while(abs(z) < 90) { 
       IMULoopUpdate();
-      z = z + myIMU.gz/float(70);
+      z = z + myIMU.gz/float(Z_AXIS_GYRO_SENSITIVITY_CONSTANT);
      Serial.println(z);
      delay(10);
   }
   Serial.println(z);
 }
+
 void prepMotors(){
     setLeftMotorBackward(STANDARD_SPEED);
     setRightMotorBackward(STANDARD_SPEED);  
