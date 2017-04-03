@@ -10,6 +10,27 @@
 #define FORWARD 1
 #define BACKWARD 0
 
+#include <Servo.h>
+#define FAN_PIN 8
+#define FAN_PIN2 9
+
+#include <MedianFilter.h>
+
+
+#define BACKWARD_ULTRASONIC_SENSOR 34
+#define FORWARD_ULTRASONIC_SENSOR 31
+
+#define trigPin 36 // Trigger Pin
+ float duration, distance; // Duration used to calculate distance
+int maximumRange = 600; // Maximum range of sensor
+int minimumRange = 2; // Minimum range of sensor
+MedianFilter medianUltra(3,0);
+
+int value = 0; // set values you need to zero
+
+Servo firstESC, secondESC; //Create as much as Servoobject you want. You can controll 2 or more Servos at the same time
+
+
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
@@ -33,8 +54,8 @@ int degrees1 = 0;
 
 void setup() {
 
-  setupIMU();
-
+//  setupIMU();
+  Serial.begin(9600);
   pinMode(L1PinLeft,OUTPUT);
   pinMode(dcEnablePin1,OUTPUT);
   pinMode(L2PinLeft,OUTPUT);
@@ -42,16 +63,59 @@ void setup() {
   pinMode(L1PinRight,OUTPUT);
   pinMode(dcEnablePin2,OUTPUT);
   pinMode(L2PinRight,OUTPUT);
+
+  pinMode(BACKWARD_ULTRASONIC_SENSOR, INPUT);
+
+  setupFan();
 }
 
+void setupFan(){
+   firstESC.attach(FAN_PIN);    // attached to pin 9 I just do this with 1 Servo
+  secondESC.attach(FAN_PIN2);
+}
 
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //readSerialMotors();
-  readDegreeTurn();
- // IMULoopUpdate();
- // IMUGyroUpdate();
+ readSerialMotors();
+//  readDegreeTurn();
+//  if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) <= 20){
+//    stopMotors();
+//  }
+  //IMULoopUpdate();
+  //IMUGyroUpdate();
+
+  //delay(100);
+}
+
+float getUltraSensorValue(int echoPin){
+  for (int i =0; i<3; i++){
+   digitalWrite(trigPin, LOW); 
+   delayMicroseconds(2); 
+  
+   digitalWrite(trigPin, HIGH);
+   delayMicroseconds(10); 
+   
+   digitalWrite(trigPin, LOW);
+   duration = pulseIn(echoPin, HIGH);
+   duration = medianUltra.in(duration); //return median value after new sample processed
+
+   //Calculate the distance (in cm) based on the speed of sound.
+   distance = duration/58.2;
+  }
+   if (distance >= maximumRange || distance <= minimumRange){
+     /* Send a negative number to computer and Turn LED ON 
+     to indicate "out of range" */
+     Serial.println("-1");
+     int infinity = 10000;
+     distance = infinity;
+   }
+   else {
+     /* Send the distance to the computer using Serial protocol, and
+     turn LED OFF to indicate successful reading. */
+     Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
+   }
+   return distance;
 }
 
 void setupIMU(){
@@ -142,7 +206,7 @@ void readDegreeTurn(){
     if(incomingByte == '.'){
          stopMotors();
          prepMotors();
-         turnLeft();
+         turnRight();
          turnDegrees(degrees1);
          stopMotors();
          degrees1 = 0;
@@ -183,12 +247,16 @@ void readSerialMotors(){
         setRightMotorForward(SLOW_SPEED);
         break;
       case '2':
-        setLeftMotorBackward(STANDARD_SPEED);
-        setRightMotorForward(STANDARD_SPEED);
+//        setLeftMotorBackward(STANDARD_SPEED);
+//        setRightMotorForward(STANDARD_SPEED);
+        firstESC.writeMicroseconds(700);
+        secondESC.writeMicroseconds(700);
         break;
      case '3':
-        setLeftMotorForward(STANDARD_SPEED);
-        setRightMotorBackward(STANDARD_SPEED);
+//        setLeftMotorForward(STANDARD_SPEED);
+//        setRightMotorBackward(STANDARD_SPEED);
+        firstESC.writeMicroseconds(2000);
+        secondESC.writeMicroseconds(2000);
         break;
      case '4':
         setLeftMotorBackward(STANDARD_SPEED);
@@ -198,21 +266,31 @@ void readSerialMotors(){
         stopMotors();
         break;
      case '6':
-//        reverseDirection();
+//         if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) <= 20){
+//           stopMotors();
+//             setLeftMotorForward(STANDARD_SPEED);
+//          setRightMotorForward(STANDARD_SPEED);
+//          delay(500);
+//          setLeftMotorForward(SLOW_SPEED);
+//          setRightMotorForward(SLOW_SPEED);
+//         }
+//         else if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) <= 20){
+//          
+//         }
         break;
      case '7':
          stopMotors();
          prepMotors();
          turnLeft();
-         waitNinetyDegrees();
-         stopMotors();
+//         waitNinetyDegrees();
+//         stopMotors();
          break;
      case '8':
         stopMotors();
          prepMotors();
          turnRight();
-         waitNinetyDegrees();
-         stopMotors();
+//         waitNinetyDegrees();
+//         stopMotors();
         break;
      case '9':
         setLeftMotorForward(SLOW_SPEED);
@@ -237,8 +315,8 @@ void waitNinetyDegrees(){
 }
 
 void prepMotors(){
-    setLeftMotorBackward(STANDARD_SPEED);
-    setRightMotorBackward(STANDARD_SPEED);  
+    setLeftMotorForward(STANDARD_SPEED);
+    setRightMotorForward(STANDARD_SPEED);  
     delay(500);
 }
 

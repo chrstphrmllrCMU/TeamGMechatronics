@@ -1,13 +1,13 @@
 #include <MedianFilter.h>
 
 //UltraSonicPins
-#define FORWARD_ULTRASONIC_SENSOR 9
-#define BACKWARD_ULTRASONIC_SENSOR 10 
+#define FORWARD_ULTRASONIC_SENSOR 37
+#define BACKWARD_ULTRASONIC_SENSOR 35
 #define LEFT_SIDE_ULTRASONIC_SENSOR 11
  #define RIGHT_SIDE_ULTRASONIC_SENSOR 13
-#define trigPin 8 // Trigger Pin
+#define trigPin 36 // Trigger Pin
  float duration, distance; // Duration used to calculate distance
-int maximumRange = 400; // Maximum range of sensor
+int maximumRange = 600; // Maximum range of sensor
 int minimumRange = 2; // Minimum range of sensor
 MedianFilter medianUltra(3,0);
 
@@ -22,8 +22,8 @@ void setup() {
 }
 
 void loop() { 
-   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR)  ;
-   getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
+    getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
    delay(500);
 }
 
@@ -38,10 +38,9 @@ float getUltraSensorValue(int echoPin){
    digitalWrite(trigPin, LOW);
    duration = pulseIn(echoPin, HIGH);
    duration = medianUltra.in(duration); //return median value after new sample processed
-
-   //Calculate the distance (in cm) based on the speed of sound.
+ // }
+    //Calculate the distance (in cm) based on the speed of sound.
    distance = duration/58.2;
-  }
    if (distance >= maximumRange || distance <= minimumRange){
      /* Send a negative number to computer and Turn LED ON 
      to indicate "out of range" */
@@ -54,5 +53,6 @@ float getUltraSensorValue(int echoPin){
      turn LED OFF to indicate successful reading. */
      Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
+  }
    return distance;
 }
