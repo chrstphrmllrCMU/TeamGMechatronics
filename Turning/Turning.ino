@@ -19,7 +19,6 @@
 
 #define BACKWARD_ULTRASONIC_SENSOR 34
 #define FORWARD_ULTRASONIC_SENSOR 31
-
 #define trigPin 36 // Trigger Pin
  float duration, distance; // Duration used to calculate distance
 int maximumRange = 600; // Maximum range of sensor
@@ -34,9 +33,9 @@ Servo firstESC, secondESC; //Create as much as Servoobject you want. You can con
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
-#define STANDARD_SPEED 120
-#define HIGH_SPEED 110
-#define SLOW_SPEED 50
+#define STANDARD_SPEED 160
+#define HIGH_SPEED 160
+#define SLOW_SPEED 160
 
 unsigned long timerA;
 
@@ -44,7 +43,7 @@ unsigned long timerA;
 #include "quaternionFilters.h"
 #include "MPU9250.h"
 MPU9250 myIMU;
-#define Z_AXIS_GYRO_SENSITIVITY_CONSTANT 70
+#define Z_AXIS_GYRO_SENSITIVITY_CONSTANT 60
 
 // Pin definitions
 int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
@@ -54,8 +53,8 @@ int degrees1 = 0;
 
 void setup() {
 
-//  setupIMU();
-  Serial.begin(9600);
+  setupIMU();
+ // Serial.begin(9600);
   pinMode(L1PinLeft,OUTPUT);
   pinMode(dcEnablePin1,OUTPUT);
   pinMode(L2PinLeft,OUTPUT);
@@ -78,14 +77,48 @@ void setupFan(){
 void loop() {
   // put your main code here, to run repeatedly:
  readSerialMotors();
-//  readDegreeTurn();
+ //readAccelAngle();
+ //readDegreeTurn();
+ // readQuaternionAngle();
 //  if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) <= 20){
 //    stopMotors();
 //  }
-  //IMULoopUpdate();
+  IMULoopUpdate();
   //IMUGyroUpdate();
 
   //delay(100);
+}
+
+void readQuaternionAngle(){
+  IMULoopUpdate();
+   float * q;
+    q = getQ();
+    float a12 =   2.0f * (q[1] * q[2] + q[0] * q[3]);
+    float a22 =   q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3];
+    float a31 =   2.0f * (q[0] * q[1] + q[2] * q[3]);
+    float a32 =   2.0f * (q[1] * q[3] - q[0] * q[2]);
+    float a33 =   q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
+    float pitch = -asinf(a32);
+    float roll  = atan2f(a31, a33);
+   float  yaw   = atan2f(a12, a22);
+    pitch *= 180.0f / PI;
+     yaw   *= 180.0f / PI; 
+     yaw   += 13.8f; // Declination at Danville, California is 13 degrees 48 minutes and 47 seconds on 2014-04-04
+  if(yaw < 0) yaw += 360.0f; // Ensure yaw stays between 0 and 360
+    Serial.println(yaw);
+}
+
+void readAccelAngle(){
+   IMULoopUpdate();
+ 
+  float accAngle = atan2(myIMU.ay,myIMU.ax)/(myIMU.deltat);
+ // Serial. (myIMU.accelBias[1]);
+//  Serial.println(myIMU.accelBias[0]);
+ if(myIMU.ay < 10 || myIMU.ax < 10){
+    accAngle = 0;
+  }
+  Serial.println(accAngle*RAD_TO_DEG);
+  
 }
 
 float getUltraSensorValue(int echoPin){
@@ -206,6 +239,14 @@ void readDegreeTurn(){
     if(incomingByte == '.'){
          stopMotors();
          prepMotors();
+         turnLeft();
+         turnDegrees(degrees1);
+         stopMotors();
+         degrees1 = 0;
+    }
+    else if(incomingByte== ','){
+         stopMotors();
+         prepMotorsBackward();
          turnRight();
          turnDegrees(degrees1);
          stopMotors();
@@ -227,7 +268,7 @@ void turnDegrees(int degrees1){
   float current,prev = 0;
   while(abs(z) < degrees1) { 
       IMULoopUpdate();
-      z = z + myIMU.gz/float(70);
+      z = z + myIMU.gz/float(Z_AXIS_GYRO_SENSITIVITY_CONSTANT);
      Serial.println(z);
      delay(10);
   }
@@ -255,8 +296,8 @@ void readSerialMotors(){
      case '3':
 //        setLeftMotorForward(STANDARD_SPEED);
 //        setRightMotorBackward(STANDARD_SPEED);
-        firstESC.writeMicroseconds(2000);
-        secondESC.writeMicroseconds(2000);
+        firstESC.writeMicroseconds(1900);
+        secondESC.writeMicroseconds(1900);
         break;
      case '4':
         setLeftMotorBackward(STANDARD_SPEED);
@@ -282,8 +323,8 @@ void readSerialMotors(){
          stopMotors();
          prepMotors();
          turnLeft();
-//         waitNinetyDegrees();
-//         stopMotors();
+          waitNinetyDegrees();
+          stopMotors();
          break;
      case '8':
         stopMotors();
@@ -317,6 +358,13 @@ void waitNinetyDegrees(){
 void prepMotors(){
     setLeftMotorForward(STANDARD_SPEED);
     setRightMotorForward(STANDARD_SPEED);  
+    delay(500);
+}
+
+
+void prepMotorsBackward(){
+    setLeftMotorBackward(STANDARD_SPEED);
+    setRightMotorBackward(STANDARD_SPEED);  
     delay(500);
 }
 

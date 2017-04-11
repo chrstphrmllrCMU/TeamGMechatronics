@@ -1,11 +1,11 @@
-#include <MedianFilter.h>
+  #include <MedianFilter.h>
 
 //UltraSonicPins
-#define FORWARD_ULTRASONIC_SENSOR 37
-#define BACKWARD_ULTRASONIC_SENSOR 35
-#define LEFT_SIDE_ULTRASONIC_SENSOR 11
+#define FORWARD_ULTRASONIC_SENSOR 47
+#define BACKWARD_ULTRASONIC_SENSOR 46
+#define LEFT_SIDE_ULTRASONIC_SENSOR 45
  #define RIGHT_SIDE_ULTRASONIC_SENSOR 13
-#define trigPin 36 // Trigger Pin
+#define trigPin 51 // Trigger Pin
  float duration, distance; // Duration used to calculate distance
 int maximumRange = 600; // Maximum range of sensor
 int minimumRange = 2; // Minimum range of sensor
@@ -13,7 +13,7 @@ MedianFilter medianUltra(3,0);
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin (9600);
+  Serial.begin (38400);
   pinMode(trigPin, OUTPUT);
   pinMode(FORWARD_ULTRASONIC_SENSOR, INPUT);
   pinMode(BACKWARD_ULTRASONIC_SENSOR, INPUT);
@@ -22,8 +22,9 @@ void setup() {
 }
 
 void loop() { 
-   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
-    getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+   //getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
+  //getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+    getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
    delay(500);
 }
 

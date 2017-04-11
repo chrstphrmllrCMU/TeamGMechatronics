@@ -27,14 +27,15 @@ unsigned long MOVING_TIMER;
 int motorDirection = FORWARD;
 
 //UltraSonicPins
-#define FORWARD_ULTRASONIC_SENSOR 9
-#define BACKWARD_ULTRASONIC_SENSOR 10 
-#define LEFT_SIDE_ULTRASONIC_SENSOR 11
+#define FORWARD_ULTRASONIC_SENSOR 47
+#define BACKWARD_ULTRASONIC_SENSOR 46
+#define LEFT_SIDE_ULTRASONIC_SENSOR 45
+#define trigPin 51 // Trigger Pin
 
 #define FORWARD_ULTRA_DISTANCE 16
 #define BACKWARD_ULTRA_DISTANCE 18.5
 //#define RIGHT_SIDE_ULTRASONIC_SENSOR 13
-#define trigPin 8 // Trigger Pin
+
 float duration, distance; // Duration used to calculate distance
 int maximumRange = 400; // Maximum range of sensor
 int minimumRange = 2; // Minimum range of sensor
@@ -50,18 +51,18 @@ int ledState;
 #define CROSSING_BLINK_DELAY 5000
 #define LED_PIN 13
 
-#define SWITCH_PIN 12
+#define SWITCH_PIN 26
 
-#define STANDARD_SPEED 120
-#define SLOW_SPEED 70
-#define HIGH_SPEED 120
+#define STANDARD_SPEED 140
+#define SLOW_SPEED 60
+#define HIGH_SPEED 140
 
 int currentDirection = 1;
 //IMU REQUIREMENTS
 #include "quaternionFilters.h"
 #include "MPU9250.h"
 MPU9250 myIMU;
-#define Z_AXIS_GYRO_SENSITIVITY_CONSTANT 70
+#define Z_AXIS_GYRO_SENSITIVITY_CONSTANT 60
 
 // Pin definitions
 int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
@@ -71,12 +72,30 @@ int degrees1 = 0;
 
 #define DEGREE_TURN 20
 
+/*
+ * Fan Ciode
+ */
+#include <Servo.h>
+#define FAN_PIN 8
+#define FAN_PIN2 9
+Servo firstESC, secondESC;
+
+#define FAN_START_VALUE 700
+#define FAN_MAX_VALUE 1800
+
+int value = 0; // set values you need to zero
+
 void setup() {
   // put your setup code here, to run once:
   
   setupSensors();
   setupIMU();
-  
+  setupFans();
+}
+
+void setupFans(){
+   firstESC.attach(FAN_PIN);    // attached to pin 9 I just do this with 1 Servo
+  secondESC.attach(FAN_PIN2);
 }
 
 void setupSensors(){
@@ -88,6 +107,7 @@ void setupSensors(){
 //  pinMode(RIGHT_SIDE_ULTRASONIC_SENSOR, INPUT);
   pinMode(LED_BUILTIN, OUTPUT);
 
+  pinMode(SWITCH_PIN,INPUT);
   pinMode(L1PinLeft,OUTPUT);
   pinMode(dcEnablePin1,OUTPUT);
   pinMode(L2PinLeft,OUTPUT);
@@ -119,16 +139,16 @@ void setupIMU(){
 void loop() {
   //Serial.println(states(state));
   checkSensorsForStateChange();
-  ledDisplayState();
+ // ledDisplayState();
   switch (state) {
     case CALIBRATING:
       checkForCorner();
       determineDirection();
-      startFan();
+      stopFans();
       break;
     case MOVING:
-      runMotors();
       runFans();
+      runMotors();
       break;
     case MOVING_TO_MOVING:
       prepMotors();
@@ -142,6 +162,7 @@ void loop() {
       break;
     case STOP:
       stopMotors();
+      stopFans();
       break;
     case ORIENTING_TO_SEPARATOR:
       orientationProcedure();
@@ -157,9 +178,16 @@ void loop() {
 }
 
 void prepMotors(){
+  if(motorDirection == FORWARD){
     setLeftMotorForward(STANDARD_SPEED);
     setRightMotorForward(STANDARD_SPEED);  
     delay(500);
+  }
+  else{
+    setLeftMotorBackward(STANDARD_SPEED);
+    setRightMotorBackward(STANDARD_SPEED);  
+    delay(500);
+  }
 }
 
 void checkForCorner(){
@@ -170,8 +198,10 @@ void determineDirection(){
 
 }
 
-void startFan(){
-
+void stopFans(){
+  firstESC.writeMicroseconds(FAN_START_VALUE);
+  secondESC.writeMicroseconds(FAN_START_VALUE);
+ 
 }
 
 void runMotors(){
@@ -187,6 +217,9 @@ void runMotors(){
 
 void runFans(){
 
+  firstESC.writeMicroseconds(FAN_MAX_VALUE);
+  secondESC.writeMicroseconds(FAN_MAX_VALUE);
+ 
 }
 
 void runMotorsSlow(){
@@ -202,10 +235,14 @@ void runMotorsSlow(){
 
 void turningProcedure(){
 if(motorDirection == FORWARD){
-  turnLeft(HIGH_SPEED);
+  turnRight(HIGH_SPEED);
+  delay(200);
+  turnRight(SLOW_SPEED);
 }
 else{
-  turnRight(HIGH_SPEED);
+  turnLeft(HIGH_SPEED);
+  delay(200);
+  turnLeft(SLOW_SPEED);
 }
 
 }
@@ -251,9 +288,16 @@ void checkSensorsForStateChange(){
       isSeparatorCrossed();
       break;
   }
-  if(checkSwitch()){
-    state = STOP;
-  }
+   if (Serial.available() > 0) {
+    // read the incoming byte:
+    int incomingByte = Serial.read();
+    if (incomingByte == '5'){
+      state= STOP;
+    }
+   }
+   if (getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR)<=20){
+     state = STOP;
+   }
 }
 void checkCrossSeparatorReady(){
   
@@ -277,7 +321,7 @@ void isFinished(){
 }
 
 void checkForObstacleStop(){
-if(motorDirection == FORWARD){
+   if(motorDirection == FORWARD){
         state = TURNING;
         timerA = millis();
    }
@@ -294,7 +338,12 @@ void checkOrientationTurnCompleted(){
 //     state = MOVING_TO_MOVING;
 //  }
   turnDegrees(DEGREE_TURN);
-  state = MOVING_TO_MOVING;
+  motorDirection=!motorDirection;
+  //prepMotors();
+ // turningProcedure();
+ // turnDegrees(DEGREE_TURN);
+ state = MOVING_TO_MOVING;
+//  state= STOP;
 }
 
 void orientationProcedure(){
@@ -306,15 +355,23 @@ void isSeparatorCrossed(){
 }
 
 void checkGoSignal(){
-  if(checkSwitch()){
-    state = MOVING_TO_MOVING;
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    int incomingByte = Serial.read();
+    if (incomingByte == '1'){
+      runFans();
+      delay(500);
+      state= MOVING_TO_MOVING;
+    }
+//  if(checkSwitch()){
+//    state = MOVING_TO_MOVING;
+//  }
   }
 }
 
-
 int switchState = HIGH;      // the current state of the output pin
 int reading;           // the current reading from the input pin
-int previous = LOW;    // the previous reading from the input pin
+int previous = HIGH;    // the previous reading from the input pin
 
 // the follow variables are long's because the time, measured in miliseconds,
 // will quickly become a bigger number than can be stored in an int.
@@ -328,7 +385,7 @@ boolean checkSwitch(){
   // if the input just went from LOW and HIGH and we've waited long enough
   // to ignore any noise on the circuit, toggle the output pin and remember
   // the time
-  if (reading == HIGH && previous == LOW && millis() - goTime > debounce) {
+  if (reading == HIGH && previous == LOW && ((millis() - goTime) > debounce)) {
     goTime = millis(); 
      previous = reading; 
     return true;  
@@ -362,14 +419,14 @@ float   getUltraSensorValue(int echoPin){
    if (distance >= maximumRange || distance <= minimumRange){
      /* Send a negative number to computer and Turn LED ON 
      to indicate "out of range" */
-     Serial.println("-1");
+//    Serial.println("ultrasonic " + String(echoPin)+ " " +"-1");
      int infinity = 10000;
      distance = infinity;
    }
    else {
      /* Send the distance to the computer using Serial protocol, and
      turn LED OFF to indicate successful reading. */
-     Serial.println("ultrasonic:"+String(distance)+ " cm");
+//     Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
   }
    return distance;
@@ -486,14 +543,14 @@ void IMULoopUpdate(){
 void turnDegrees(int degrees1){
 //Watches IMU reading and return after turning by x degrees
   float z = 0;
-  Serial.println(abs(z));
+ // Serial.println(abs(z));
   float current,prev = 0;
   while(abs(z) < degrees1) { 
       IMULoopUpdate();
-      z = z + myIMU.gz/float(70);
-     Serial.println(z);
+      z = z + myIMU.gz/float(Z_AXIS_GYRO_SENSITIVITY_CONSTANT);
+   //  Serial.println(z);
      delay(10);
   }
-  Serial.println(z);
+ // Serial.println(z);
 }
 
