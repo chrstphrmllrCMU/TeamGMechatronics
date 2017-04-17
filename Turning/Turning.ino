@@ -33,9 +33,12 @@ Servo firstESC, secondESC; //Create as much as Servoobject you want. You can con
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
-#define STANDARD_SPEED 160
-#define HIGH_SPEED 160
-#define SLOW_SPEED 160
+#define STANDARD_SPEED  23 0
+#define HIGH_SPEED 180
+#define SLOW_SPEED 180
+#define FAN_SPEED 2000
+
+#define GRAVITY_COMPENSATION 20
 
 unsigned long timerA;
 
@@ -283,9 +286,6 @@ void readSerialMotors(){
       case '1':
         setLeftMotorForward(STANDARD_SPEED);
         setRightMotorForward(STANDARD_SPEED);
-        delay(500);
-        setLeftMotorForward(SLOW_SPEED);
-        setRightMotorForward(SLOW_SPEED);
         break;
       case '2':
 //        setLeftMotorBackward(STANDARD_SPEED);
@@ -296,8 +296,8 @@ void readSerialMotors(){
      case '3':
 //        setLeftMotorForward(STANDARD_SPEED);
 //        setRightMotorBackward(STANDARD_SPEED);
-        firstESC.writeMicroseconds(1900);
-        secondESC.writeMicroseconds(1900);
+        firstESC.writeMicroseconds(FAN_SPEED);
+        secondESC.writeMicroseconds(FAN_SPEED);
         break;
      case '4':
         setLeftMotorBackward(STANDARD_SPEED);
@@ -397,7 +397,7 @@ void setLeftMotorForward(int speed){
 void setRightMotorForward(int speed){
   digitalWrite(L1PinRight,LOW);
   digitalWrite(L2PinRight,HIGH);
-  analogWrite(dcEnablePin2,speed);
+  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION);
   rightMotorDirection = FORWARD;
 }
 
@@ -411,7 +411,7 @@ void setLeftMotorBackward(int speed){
 void setRightMotorBackward(int speed){
   digitalWrite(L1PinRight,HIGH);
   digitalWrite(L2PinRight,LOW);
-  analogWrite(dcEnablePin2,speed);
+  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION);
   leftMotorDirection=BACKWARD;
 }
 

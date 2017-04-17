@@ -82,7 +82,7 @@ void setLeftMotorForward(int speed){
 void setRightMotorForward(int speed){
   digitalWrite(L1PinRight,LOW);
   digitalWrite(L2PinRight,HIGH);
-  analogWrite(dcEnablePin2,speed);
+  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION);
   rightMotorDirection = FORWARD;
 }
 
@@ -96,7 +96,7 @@ void setLeftMotorBackward(int speed){
 void setRightMotorBackward(int speed){
   digitalWrite(L1PinRight,HIGH);
   digitalWrite(L2PinRight,LOW);
-  analogWrite(dcEnablePin2,speed);
+  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION);
   leftMotorDirection=BACKWARD;
 }
 

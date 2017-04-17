@@ -48,7 +48,7 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 7, 5, 6);
 #define SerialDebug true  // Set to true to get Serial output for debugging
 
 // Pin definitions
-int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
+int intPin = 35;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 int myLed  = 13;  // Set up pin 13 led for toggling
 
 MPU9250 myIMU;

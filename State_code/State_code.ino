@@ -21,19 +21,26 @@ unsigned long MOVING_TIMER;
 #define dcEnablePin2 6
 #define L2PinRight 7
 
+
+#define GRAVITY_COMPENSATION 20
+#define STANDARD_SPEED 140
+#define SLOW_SPEED 60
+#define HIGH_SPEED 140
+
 #define FORWARD 1
 #define BACKWARD 0 
 
-int motorDirection = FORWARD;
+
+int motorDirection = BACKWARD; //INITIAL DIRECTION
 
 //UltraSonicPins
-#define FORWARD_ULTRASONIC_SENSOR 47
-#define BACKWARD_ULTRASONIC_SENSOR 46
+#define FORWARD_ULTRASONIC_SENSOR 46
+#define BACKWARD_ULTRASONIC_SENSOR 47
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRA_DISTANCE 16
-#define BACKWARD_ULTRA_DISTANCE 18.5
+#define FORWARD_ULTRA_DISTANCE 15
+#define BACKWARD_ULTRA_DISTANCE 15
 //#define RIGHT_SIDE_ULTRASONIC_SENSOR 13
 
 float duration, distance; // Duration used to calculate distance
@@ -53,10 +60,6 @@ int ledState;
 
 #define SWITCH_PIN 26
 
-#define STANDARD_SPEED 140
-#define SLOW_SPEED 60
-#define HIGH_SPEED 140
-
 int currentDirection = 1;
 //IMU REQUIREMENTS
 #include "quaternionFilters.h"
@@ -70,7 +73,8 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 
 int degrees1 = 0;
 
-#define DEGREE_TURN 20
+#define DEGREE_TURN 5
+#define DEGREE_ORIENT 90
 
 /*
  * Fan Ciode
@@ -81,7 +85,7 @@ int degrees1 = 0;
 Servo firstESC, secondESC;
 
 #define FAN_START_VALUE 700
-#define FAN_MAX_VALUE 1800
+#define FAN_MAX_VALUE 2000
 
 int value = 0; // set values you need to zero
 
@@ -181,12 +185,12 @@ void prepMotors(){
   if(motorDirection == FORWARD){
     setLeftMotorForward(STANDARD_SPEED);
     setRightMotorForward(STANDARD_SPEED);  
-    delay(500);
+    delay(500); //FIX THIS
   }
   else{
     setLeftMotorBackward(STANDARD_SPEED);
     setRightMotorBackward(STANDARD_SPEED);  
-    delay(500);
+     delay(500);
   }
 }
 
@@ -234,18 +238,31 @@ void runMotorsSlow(){
 }
 
 void turningProcedure(){
-if(motorDirection == FORWARD){
+  if(motorDirection == BACKWARD){
+    turnRight(HIGH_SPEED);
+    delay(50);
+    turnRight(SLOW_SPEED);
+  }
+  else{
+    turnLeft(HIGH_SPEED);
+    delay(50);
+    turnLeft(SLOW_SPEED);
+  }
+}
+void orientationProcedure(){
+  if(motorDirection == BACKWARD){
   turnRight(HIGH_SPEED);
-  delay(200);
+  delay(50);
   turnRight(SLOW_SPEED);
 }
-else{
-  turnLeft(HIGH_SPEED);
-  delay(200);
-  turnLeft(SLOW_SPEED);
-}
+  else{
+    turnLeft(HIGH_SPEED);
+    delay(50);
+    turnLeft(SLOW_SPEED);
+  }
 
 }
+
 
 void adjustFanSpeed(){
 
@@ -282,7 +299,7 @@ void checkSensorsForStateChange(){
       checkOrientationTurnCompleted();
       break;
     case ORIENTING_TO_SEPARATOR:
-      orientationProcedure();
+      checkOrientationProcedure();
       break;
     case CROSSING_SEPARATOR:
       isSeparatorCrossed();
@@ -295,9 +312,9 @@ void checkSensorsForStateChange(){
       state= STOP;
     }
    }
-   if (getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR)<=20){
-     state = STOP;
-   }
+//   if (getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR)<=20){
+//     state = STOP;
+//   }
 }
 void checkCrossSeparatorReady(){
   
@@ -332,22 +349,15 @@ void checkForObstacleStop(){
 }
 
 void checkOrientationTurnCompleted(){
-//  unsigned long currentTime = millis();
-//  if((currentTime - timerA) > 100){
-//      motorDirection=!motorDirection;
-//     state = MOVING_TO_MOVING;
-//  }
   turnDegrees(DEGREE_TURN);
   motorDirection=!motorDirection;
-  //prepMotors();
- // turningProcedure();
- // turnDegrees(DEGREE_TURN);
  state = MOVING_TO_MOVING;
 //  state= STOP;
 }
 
-void orientationProcedure(){
-
+void checkOrientationProcedure(){
+  turnDegrees(DEGREE_ORIENT);
+  state = CROSSING_SEPARATOR;
 }
 
 void isSeparatorCrossed(){
@@ -363,9 +373,6 @@ void checkGoSignal(){
       delay(500);
       state= MOVING_TO_MOVING;
     }
-//  if(checkSwitch()){
-//    state = MOVING_TO_MOVING;
-//  }
   }
 }
 
@@ -395,10 +402,7 @@ boolean checkSwitch(){
 }
 
 void timePrepMotors(){
-//  unsigned long currentTime = millis();
-//  if((currentTime - MOVING_TIMER)>=500){
     state = MOVING;
-//  }
 }
 
 float   getUltraSensorValue(int echoPin){
@@ -481,12 +485,12 @@ void blinkLED(unsigned long ledDelay){
 
 
 void IMUGyroUpdate(){
-          Serial.print("X-gyro rate: "); Serial.print(myIMU.gx, 3);
-        Serial.print(" degrees/sec ");
-        Serial.print("Y-gyro rate: "); Serial.print(myIMU.gy, 3);
-        Serial.print(" degrees/sec ");
-        Serial.print("Z-gyro rate: "); Serial.print(myIMU.gz, 3);
-        Serial.println(" degrees/sec");
+//          Serial.print("X-gyro rate: "); Serial.print(myIMU.gx, 3);
+//        Serial.print(" degrees/sec ");
+//        Serial.print("Y-gyro rate: "); Serial.print(myIMU.gy, 3);
+//        Serial.print(" degrees/sec ");
+//        Serial.print("Z-gyro rate: "); Serial.print(myIMU.gz, 3);
+//        Serial.println(" degrees/sec");
 }
 
 void IMULoopUpdate(){
