@@ -14,7 +14,7 @@
 #define FAN_PIN 8
 #define FAN_PIN2 9
 
-#include <MedianFilter.h>
+#include <MedianFilter.h> 
 
 
 #define BACKWARD_ULTRASONIC_SENSOR 34
@@ -33,12 +33,12 @@ Servo firstESC, secondESC; //Create as much as Servoobject you want. You can con
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
-#define STANDARD_SPEED  23 0
+#define STANDARD_SPEED  110
 #define HIGH_SPEED 180
-#define SLOW_SPEED 180
+#define SLOW_SPEED 60
 #define FAN_SPEED 2000
 
-#define GRAVITY_COMPENSATION 20
+#define GRAVITY_COMPENSATION 0
 
 unsigned long timerA;
 

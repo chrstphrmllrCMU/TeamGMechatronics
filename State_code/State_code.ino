@@ -3,7 +3,7 @@
 
 #include <MedianFilter.h>
 
-enum states {CALIBRATING, MOVING, MOVING_TO_MOVING, APPROACHING_EDGE, TURNING, STOP,ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, FINISHED};
+enum states {CALIBRATING, MOVING, MOVING_TO_MOVING, APPROACHING_EDGE, TURNING, STOP,ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, ORIENTING_AFTER_SEPARATOR,RETURN_TO_SEPARATOR, FINDING_EDGE, FINISHED};
 int state = 0;
 unsigned long MOVING_TIMER;
 
@@ -22,16 +22,16 @@ unsigned long MOVING_TIMER;
 #define L2PinRight 7
 
 
-#define GRAVITY_COMPENSATION 20
-#define STANDARD_SPEED 140
-#define SLOW_SPEED 60
+#define GRAVITY_COMPENSATION 60
+#define STANDARD_SPEED 110
+#define SLOW_SPEED 110
 #define HIGH_SPEED 140
 
 #define FORWARD 1
 #define BACKWARD 0 
 
 
-int motorDirection = BACKWARD; //INITIAL DIRECTION
+int motorDirection = FORWARD; //INITIAL DIRECTION
 
 //UltraSonicPins
 #define FORWARD_ULTRASONIC_SENSOR 46
@@ -39,9 +39,11 @@ int motorDirection = BACKWARD; //INITIAL DIRECTION
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRA_DISTANCE 15
-#define BACKWARD_ULTRA_DISTANCE 15
-//#define RIGHT_SIDE_ULTRASONIC_SENSOR 13
+#define FORWARD_ULTRA_DISTANCE 5
+#define BACKWARD_ULTRA_DISTANCE 5
+#define LEFT_SIDE_ULTRA_DISTANCE 10
+#define CROSSING_SEPARATOR_STOP_DISTANCE 10 
+#define CROSSING_SEPARATOR_RETURN_DISTANCE 5
 
 float duration, distance; // Duration used to calculate distance
 int maximumRange = 400; // Maximum range of sensor
@@ -88,6 +90,8 @@ Servo firstESC, secondESC;
 #define FAN_MAX_VALUE 2000
 
 int value = 0; // set values you need to zero
+
+bool separator_crossed = false;
 
 void setup() {
   // put your setup code here, to run once:
@@ -172,8 +176,17 @@ void loop() {
       orientationProcedure();
       break;
     case CROSSING_SEPARATOR:
-      adjustFanSpeed();
-      adjustMotorSpeed();
+    //  adjustFanSpeed();
+      runMotors();
+      break;
+    case RETURN_TO_SEPARATOR:
+      runMotorsReverse();
+      break;
+    case ORIENTING_AFTER_SEPARATOR:
+      turningProcedure();
+      break;
+    case FINDING_EDGE:
+      runMotorsReverse();
       break;
     case FINISHED:
       shutdownSystem();
@@ -219,6 +232,17 @@ void runMotors(){
   }
 }
 
+void runMotorsReverse(){
+  if(motorDirection == BACKWARD){
+    setLeftMotorForward(SLOW_SPEED);
+    setRightMotorForward(SLOW_SPEED);
+  }
+  else {
+    setLeftMotorBackward(SLOW_SPEED);
+    setRightMotorBackward(SLOW_SPEED);
+  }
+}
+
 void runFans(){
 
   firstESC.writeMicroseconds(FAN_MAX_VALUE);
@@ -238,7 +262,7 @@ void runMotorsSlow(){
 }
 
 void turningProcedure(){
-  if(motorDirection == BACKWARD){
+  if(motorDirection == FORWARD){
     turnRight(HIGH_SPEED);
     delay(50);
     turnRight(SLOW_SPEED);
@@ -254,13 +278,12 @@ void orientationProcedure(){
   turnRight(HIGH_SPEED);
   delay(50);
   turnRight(SLOW_SPEED);
-}
+  } 
   else{
     turnLeft(HIGH_SPEED);
     delay(50);
     turnLeft(SLOW_SPEED);
   }
-
 }
 
 
@@ -269,7 +292,14 @@ void adjustFanSpeed(){
 }
 
 void adjustMotorSpeed(){
-
+  if(motorDirection == BACKWARD){
+    setLeftMotorForward(SLOW_SPEED);
+    setRightMotorForward(SLOW_SPEED);
+  }
+  else {
+    setLeftMotorBackward(SLOW_SPEED);
+    setRightMotorBackward(SLOW_SPEED);
+  }
 }
 
 
@@ -304,6 +334,15 @@ void checkSensorsForStateChange(){
     case CROSSING_SEPARATOR:
       isSeparatorCrossed();
       break;
+    case RETURN_TO_SEPARATOR:
+      checkReturnToSeparator();
+      break;
+    case ORIENTING_AFTER_SEPARATOR:
+      checkOrientationProcedureAfter();
+      break;
+    case FINDING_EDGE:
+      checkFindingEdge();
+      break;
   }
    if (Serial.available() > 0) {
     // read the incoming byte:
@@ -316,18 +355,33 @@ void checkSensorsForStateChange(){
 //     state = STOP;
 //   }
 }
-void checkCrossSeparatorReady(){
-  
+void checkReturnToSeparator(){
+   if(motorDirection == FORWARD){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
+       state=ORIENTING_AFTER_SEPARATOR;
+      }
+   }
+   else if(motorDirection == BACKWARD){
+    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
+        state=ORIENTING_AFTER_SEPARATOR;
+      }
+   }
 }
 
 void checkForObstacle(){
-   if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
+  if(motorDirection == FORWARD){
+      if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && !separator_crossed){
+       state = ORIENTING_TO_SEPARATOR;
+      }
+      else if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
        state = APPROACHING_EDGE;
       }
    }
    else if(motorDirection == BACKWARD){
-      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
+     if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE &&!separator_crossed){
+        state = ORIENTING_TO_SEPARATOR;
+      }
+     else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
         state = APPROACHING_EDGE;
       }
    }
@@ -360,8 +414,38 @@ void checkOrientationProcedure(){
   state = CROSSING_SEPARATOR;
 }
 
-void isSeparatorCrossed(){
+void checkOrientationProcedureAfter(){
+  turnDegrees(DEGREE_ORIENT);
+  state = FINDING_EDGE;
+}
 
+void checkFindingEdge(){
+ if(motorDirection == FORWARD){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
+       motorDirection=!motorDirection;
+       state = MOVING_TO_MOVING;
+      }
+   }
+   else if(motorDirection == BACKWARD){
+    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
+        motorDirection=!motorDirection;
+        state = MOVING_TO_MOVING;
+      }
+   }
+}
+  
+
+void isSeparatorCrossed(){
+  if(motorDirection == FORWARD){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
+        separator_crossed = true;
+        state = ORIENTING_AFTER_SEPARATOR;
+      }
+   }
+   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
+        separator_crossed = true;
+        state = ORIENTING_AFTER_SEPARATOR;
+   }
 }
 
 void checkGoSignal(){
