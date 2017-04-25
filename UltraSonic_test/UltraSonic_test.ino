@@ -1,8 +1,8 @@
   #include <MedianFilter.h>
 
 //UltraSonicPins
-#define FORWARD_ULTRASONIC_SENSOR 47
-#define BACKWARD_ULTRASONIC_SENSOR 46
+#define FORWARD_ULTRASONIC_SENSOR 46
+#define BACKWARD_ULTRASONIC_SENSOR 47
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
  #define RIGHT_SIDE_ULTRASONIC_SENSOR 13
 #define trigPin 51 // Trigger Pin
@@ -22,9 +22,9 @@ void setup() {
 }
 
 void loop() { 
-  // getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
-//  getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
-    getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
+   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
+  getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+  //  getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
    delay(500);
 }
 

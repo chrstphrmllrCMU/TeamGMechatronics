@@ -39,9 +39,9 @@ int motorDirection = FORWARD; //INITIAL DIRECTION
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRA_DISTANCE 5
-#define BACKWARD_ULTRA_DISTANCE 5
-#define LEFT_SIDE_ULTRA_DISTANCE 10
+#define FORWARD_ULTRA_DISTANCE 10
+#define BACKWARD_ULTRA_DISTANCE 10
+#define LEFT_SIDE_ULTRA_DISTANCE 0
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
 
@@ -75,8 +75,8 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 
 int degrees1 = 0;
 
-#define DEGREE_TURN 5
-#define DEGREE_ORIENT 90
+#define DEGREE_TURN 1 
+#define DEGREE_ORIENT 45
 
 /*
  * Fan Ciode
@@ -370,19 +370,19 @@ void checkReturnToSeparator(){
 
 void checkForObstacle(){
   if(motorDirection == FORWARD){
-      if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && !separator_crossed){
-       state = ORIENTING_TO_SEPARATOR;
-      }
-      else if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
+     if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
        state = APPROACHING_EDGE;
+      }
+      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && !separator_crossed){
+       state = ORIENTING_TO_SEPARATOR;
       }
    }
    else if(motorDirection == BACKWARD){
-     if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE &&!separator_crossed){
-        state = ORIENTING_TO_SEPARATOR;
-      }
-     else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
+     if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
         state = APPROACHING_EDGE;
+      }
+      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && !separator_crossed){
+        state = ORIENTING_TO_SEPARATOR;
       }
    }
 }

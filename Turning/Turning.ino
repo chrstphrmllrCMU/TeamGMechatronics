@@ -38,7 +38,7 @@ int leftMotorDirection,rightMotorDirection;
 #define SLOW_SPEED 60
 #define FAN_SPEED 2000
 
-#define GRAVITY_COMPENSATION 0
+#define GRAVITY_COMPENSATION 60
 
 unsigned long timerA;
 
