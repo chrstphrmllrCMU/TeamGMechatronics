@@ -22,12 +22,12 @@ unsigned long MOVING_TIMER;
 #define L2PinRight 7
 
 
-#define GRAVITY_COMPENSATION_LEFT 0
-#define GRAVITY_COMPENSATION_RIGHT 0
+#define GRAVITY_COMPENSATION_LEFT 80
+#define GRAVITY_COMPENSATION_RIGHT 60
 
 #define STANDARD_SPEED 120
 #define SLOW_SPEED 90
-#define HIGH_SPEED 140
+#define HIGH_SPEED 180
 
 #define TIME_PREP_MOTORS 0
 
@@ -43,8 +43,8 @@ int motorDirection = FORWARD; //INITIAL DIRECTION
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRA_DISTANCE 5
-#define BACKWARD_ULTRA_DISTANCE 5
+#define FORWARD_ULTRA_DISTANCE 10
+#define BACKWARD_ULTRA_DISTANCE 10
 #define LEFT_SIDE_ULTRA_DISTANCE 0
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
@@ -271,12 +271,12 @@ void turningProcedure(){
   if(motorDirection == FORWARD){
     turnRight(HIGH_SPEED);
     delay(50);
-    turnRight(SLOW_SPEED);
+    turnRight(HIGH_SPEED);
   }
   else{
     turnLeft(HIGH_SPEED);
     delay(50);
-    turnLeft(SLOW_SPEED);
+    turnLeft(HIGH_SPEED);
   }
 }
 void orientationProcedure(){
@@ -379,18 +379,21 @@ void checkForObstacle(){
      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
        state = APPROACHING_EDGE;
       }
-      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
-       state = ORIENTING_TO_SEPARATOR;
-      }
+//      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
+//       state = ORIENTING_TO_SEPARATOR;
+//      }
    }
    else if(motorDirection == BACKWARD){
      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
         state = APPROACHING_EDGE;
       }
-    else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
-        state = ORIENTING_TO_SEPARATOR;
-      }
+//    else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
+//        state = ORIENTING_TO_SEPARATOR;
+//      }
    }
+    else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
+       state = ORIENTING_TO_SEPARATOR;
+    }
 }
 
 void isFinished(){
@@ -460,7 +463,7 @@ void checkGoSignal(){
     int incomingByte = Serial.read();
     if (incomingByte == '1'){
       runFans();
-      delay(500);
+      delay(1000);
       state= MOVING_TO_MOVING;
     }
   }
@@ -524,7 +527,7 @@ float getUltraSensorValue(int echoPin){
   //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
   }
-  // Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
+   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    return distance;
 }
 
