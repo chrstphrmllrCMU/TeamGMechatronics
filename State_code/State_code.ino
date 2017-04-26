@@ -27,7 +27,7 @@ unsigned long MOVING_TIMER;
 
 #define STANDARD_SPEED 120
 #define SLOW_SPEED 90
-#define HIGH_SPEED 180
+#define HIGH_SPEED 160
 
 #define TIME_PREP_MOTORS 0
 
@@ -45,7 +45,7 @@ int motorDirection = FORWARD; //INITIAL DIRECTION
 
 #define FORWARD_ULTRA_DISTANCE 10
 #define BACKWARD_ULTRA_DISTANCE 10
-#define LEFT_SIDE_ULTRA_DISTANCE 0
+#define LEFT_SIDE_ULTRA_DISTANCE 20 
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
@@ -68,7 +68,7 @@ int ledState;
 #define SWITCH_PIN 26
 
 int currentDirection = 1;
-//IMU REQUIREMENTS
+//IMU REQeUIREMENTS
 #include "quaternionFilters.h"
 #include "MPU9250.h"
 MPU9250 myIMU;
@@ -81,7 +81,7 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 int degrees1 = 0;
 
 #define DEGREE_TURN 1
-#define DEGREE_ORIENT 90
+#define DEGREE_ORIENT 30
 
 /*
  * Fan Ciode
@@ -183,7 +183,7 @@ void loop() {
       break;
     case CROSSING_SEPARATOR:
     //  adjustFanSpeed();
-      runMotors();
+      runMotorsFast();
       break;
     case RETURN_TO_SEPARATOR:
       runMotorsReverse();
@@ -267,7 +267,31 @@ void runMotorsSlow(){
   }
 }
 
+void runMotorsFast(){
+  if(motorDirection == FORWARD){
+    setLeftMotorForward(HIGH_SPEED);
+    setRightMotorForward(HIGH_SPEED);
+  }
+  else if(motorDirection == BACKWARD){
+    setLeftMotorBackward(HIGH_SPEED);
+    setRightMotorBackward(HIGH_SPEED);
+  }
+}
+
 void turningProcedure(){
+  if(motorDirection == BACKWARD){
+    turnRight(HIGH_SPEED);
+    delay(50);
+    turnRight(HIGH_SPEED);
+  }
+  else{
+    turnLeft(HIGH_SPEED);
+    delay(50);
+    turnLeft(HIGH_SPEED);
+  }
+}
+
+void turningProcedureReverse(){
   if(motorDirection == FORWARD){
     turnRight(HIGH_SPEED);
     delay(50);
@@ -279,16 +303,38 @@ void turningProcedure(){
     turnLeft(HIGH_SPEED);
   }
 }
+
 void orientationProcedure(){
+  
   if(motorDirection == BACKWARD){
   turnRight(HIGH_SPEED);
   delay(50);
-  turnRight(SLOW_SPEED);
+  turnRight(HIGH_SPEED);
   } 
   else{
     turnLeft(HIGH_SPEED);
     delay(50);
-    turnLeft(SLOW_SPEED);
+    turnLeft(HIGH_SPEED);
+  }
+}
+
+void orientationProcedureFlipped(){
+  
+  if(motorDirection == BACKWARD){
+  turnRightFlipped(HIGH_SPEED);
+  } 
+  else{
+    turnLeftFlipped(HIGH_SPEED);
+  }
+}
+
+void orientationProcedurePostCross(){
+  
+  if(motorDirection == FORWARD){
+  turnRightFlipped(HIGH_SPEED);
+  } 
+  else{
+    turnLeftFlipped(HIGH_SPEED);
   }
 }
 
@@ -362,17 +408,16 @@ void checkSensorsForStateChange(){
 //   }
 }
 void checkReturnToSeparator(){
-   if(motorDirection == FORWARD){
+   if(motorDirection == BACKWARD){
       if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
        state=ORIENTING_AFTER_SEPARATOR;
       }
    }
-   else if(motorDirection == BACKWARD){
-    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
+   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
         state=ORIENTING_AFTER_SEPARATOR;
       }
    }
-}
+
 
 void checkForObstacle(){
   if(motorDirection == FORWARD){
@@ -391,7 +436,7 @@ void checkForObstacle(){
 //        state = ORIENTING_TO_SEPARATOR;
 //      }
    }
-    else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
+     if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
        state = ORIENTING_TO_SEPARATOR;
     }
 }
@@ -420,10 +465,33 @@ void checkOrientationTurnCompleted(){
 
 void checkOrientationProcedure(){
   turnDegrees(DEGREE_ORIENT);
+  if(motorDirection == BACKWARD){
+    setLeftMotorForward(HIGH_SPEED);
+    setRightMotorForward(HIGH_SPEED);
+  } 
+  else if(motorDirection == FORWARD){
+    setLeftMotorBackward(HIGH_SPEED);
+    setRightMotorBackward(HIGH_SPEED);
+  }
+  delay(1500);
+  orientationProcedureFlipped();
+  turnDegrees(DEGREE_ORIENT); 
   state = CROSSING_SEPARATOR;
 }
 
 void checkOrientationProcedureAfter(){
+  orientationProcedurePostCross();
+  turnDegrees(DEGREE_ORIENT);
+  if(motorDirection == FORWARD){
+    setLeftMotorForward(HIGH_SPEED);
+    setRightMotorForward(HIGH_SPEED);
+  } 
+  else {
+    setLeftMotorBackward(HIGH_SPEED);
+    setRightMotorBackward(HIGH_SPEED);
+  }
+  delay(1500);
+  turningProcedureReverse();
   turnDegrees(DEGREE_ORIENT);
   state = FINDING_EDGE;
 }
@@ -447,12 +515,12 @@ void checkFindingEdge(){
 void isSeparatorCrossed(){
   if(motorDirection == FORWARD){
       if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
-        separator_crossed = true;
+       // separator_crossed = true;
         state = ORIENTING_AFTER_SEPARATOR;
       }
    }
    else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
-        separator_crossed = true;
+       // separator_crossed = true;
         state = ORIENTING_AFTER_SEPARATOR;
    }
 }

@@ -63,13 +63,23 @@ int leftMotorDirection,rightMotorDirection;
 //  }
 //}
 void turnRight(int speed){
-  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
+  setLeftMotorForward(speed);
   setRightMotorBackward(speed-GRAVITY_COMPENSATION_RIGHT);
 }
 
 void turnLeft(int speed){
-   setLeftMotorBackward(speed-GRAVITY_COMPENSATION_LEFT);
+   setLeftMotorBackward(speed);
    setRightMotorForward(speed-GRAVITY_COMPENSATION_RIGHT);
+}
+
+void turnRightFlipped(int speed){
+  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
+  setRightMotorBackward(speed);
+}
+
+void turnLeftFlipped(int speed){
+   setLeftMotorBackward(speed-GRAVITY_COMPENSATION_LEFT);
+   setRightMotorForward(speed);
 }
 
 void setLeftMotorForward(int speed){
