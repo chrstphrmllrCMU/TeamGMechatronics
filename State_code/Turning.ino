@@ -64,12 +64,12 @@ int leftMotorDirection,rightMotorDirection;
 //}
 void turnRight(int speed){
   setLeftMotorForward(speed);
-  setRightMotorBackward(speed-GRAVITY_COMPENSATION_RIGHT);
+  setRightMotorBackward(speed);
 }
 
 void turnLeft(int speed){
    setLeftMotorBackward(speed);
-   setRightMotorForward(speed-GRAVITY_COMPENSATION_RIGHT);
+   setRightMotorForward(speed);
 }
 
 void turnRightFlipped(int speed){
@@ -131,6 +131,6 @@ void stopMotors(){
   digitalWrite(L2PinRight,HIGH);
   analogWrite(dcEnablePin1,0);
   analogWrite(dcEnablePin2,0);
-}
+} 
 
 
