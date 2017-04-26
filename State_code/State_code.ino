@@ -22,10 +22,14 @@ unsigned long MOVING_TIMER;
 #define L2PinRight 7
 
 
-#define GRAVITY_COMPENSATION 60
-#define STANDARD_SPEED 110
-#define SLOW_SPEED 110
+#define GRAVITY_COMPENSATION_LEFT 0
+#define GRAVITY_COMPENSATION_RIGHT 0
+
+#define STANDARD_SPEED 120
+#define SLOW_SPEED 90
 #define HIGH_SPEED 140
+
+#define TIME_PREP_MOTORS 0
 
 #define FORWARD 1
 #define BACKWARD 0 
@@ -39,9 +43,10 @@ int motorDirection = FORWARD; //INITIAL DIRECTION
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRA_DISTANCE 10
-#define BACKWARD_ULTRA_DISTANCE 10
+#define FORWARD_ULTRA_DISTANCE 5
+#define BACKWARD_ULTRA_DISTANCE 5
 #define LEFT_SIDE_ULTRA_DISTANCE 0
+
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
 
@@ -75,8 +80,8 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 
 int degrees1 = 0;
 
-#define DEGREE_TURN 1 
-#define DEGREE_ORIENT 45
+#define DEGREE_TURN 1
+#define DEGREE_ORIENT 90
 
 /*
  * Fan Ciode
@@ -123,6 +128,7 @@ void setupSensors(){
   pinMode(L1PinRight,OUTPUT);
   pinMode(dcEnablePin2,OUTPUT);
   pinMode(L2PinRight,OUTPUT);
+
 
 }
 
@@ -373,7 +379,7 @@ void checkForObstacle(){
      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
        state = APPROACHING_EDGE;
       }
-      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && !separator_crossed){
+      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
        state = ORIENTING_TO_SEPARATOR;
       }
    }
@@ -381,7 +387,7 @@ void checkForObstacle(){
      if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
         state = APPROACHING_EDGE;
       }
-      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && !separator_crossed){
+    else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
         state = ORIENTING_TO_SEPARATOR;
       }
    }
@@ -393,7 +399,7 @@ void isFinished(){
 
 void checkForObstacleStop(){
    if(motorDirection == FORWARD){
-        state = TURNING;
+        state=TURNING;
         timerA = millis();
    }
    else if(motorDirection == BACKWARD){
@@ -486,10 +492,11 @@ boolean checkSwitch(){
 }
 
 void timePrepMotors(){
+    delay(TIME_PREP_MOTORS);
     state = MOVING;
 }
 
-float   getUltraSensorValue(int echoPin){
+float getUltraSensorValue(int echoPin){
   for (int i =0; i<3; i++){
    digitalWrite(trigPin, LOW); 
    delayMicroseconds(2); 
@@ -514,9 +521,10 @@ float   getUltraSensorValue(int echoPin){
    else {
      /* Send the distance to the computer using Serial protocol, and
      turn LED OFF to indicate successful reading. */
-//     Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
+  //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
   }
+  // Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    return distance;
 }
 

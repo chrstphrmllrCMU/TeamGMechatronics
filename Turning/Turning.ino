@@ -33,12 +33,14 @@ Servo firstESC, secondESC; //Create as much as Servoobject you want. You can con
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
-#define STANDARD_SPEED  110
-#define HIGH_SPEED 180
+#define STANDARD_SPEED  140
+#define HIGH_SPEED 140
 #define SLOW_SPEED 60
 #define FAN_SPEED 2000
 
-#define GRAVITY_COMPENSATION 60
+
+#define GRAVITY_COMPENSATION_LEFT 60
+#define GRAVITY_COMPENSATION_RIGHT 0
 
 unsigned long timerA;
 
@@ -390,28 +392,28 @@ void turnLeft(){
 void setLeftMotorForward(int speed){
   digitalWrite(L1PinLeft,LOW);
   digitalWrite(L2PinLeft,HIGH);
-  analogWrite(dcEnablePin1,speed);
+  analogWrite(dcEnablePin1,speed+GRAVITY_COMPENSATION_LEFT);
   leftMotorDirection=FORWARD;
 }
 
 void setRightMotorForward(int speed){
   digitalWrite(L1PinRight,LOW);
   digitalWrite(L2PinRight,HIGH);
-  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION);
+  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION_RIGHT);
   rightMotorDirection = FORWARD;
 }
 
 void setLeftMotorBackward(int speed){
   digitalWrite(L1PinLeft,HIGH);
   digitalWrite(L2PinLeft,LOW);
-  analogWrite(dcEnablePin1,speed);
+  analogWrite(dcEnablePin1,speed+GRAVITY_COMPENSATION_LEFT);
   leftMotorDirection=BACKWARD;
 }
 
 void setRightMotorBackward(int speed){
   digitalWrite(L1PinRight,HIGH);
   digitalWrite(L2PinRight,LOW);
-  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION);
+  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION_RIGHT);
   leftMotorDirection=BACKWARD;
 }
 
