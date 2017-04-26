@@ -473,9 +473,9 @@ void checkOrientationProcedure(){
     setLeftMotorBackward(HIGH_SPEED);
     setRightMotorBackward(HIGH_SPEED);
   }
-  delay(1500);
+  delay(2500);
   orientationProcedureFlipped();
-  turnDegrees(DEGREE_ORIENT); 
+  turnDegrees(DEGREE_ORIENT+10); 
   state = CROSSING_SEPARATOR;
 }
 
