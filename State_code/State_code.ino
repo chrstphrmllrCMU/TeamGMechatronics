@@ -1,3 +1,5 @@
+//#include <ServoTimer2.h>
+
 #include <MPU9250.h>
 #include <quaternionFilters.h>
 
@@ -28,6 +30,7 @@ unsigned long MOVING_TIMER;
 #define STANDARD_SPEED 120
 #define SLOW_SPEED 90
 #define HIGH_SPEED 160
+#define MAX_SPEED 255
 
 #define TIME_PREP_MOTORS 0
 
@@ -80,12 +83,13 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 
 int degrees1 = 0;
 
-#define DEGREE_TURN 1
+#define DEGREE_TURN 3
 #define DEGREE_ORIENT 30
 
 /*
  * Fan Ciode
  */
+//#
 #include <Servo.h>
 #define FAN_PIN 8
 #define FAN_PIN2 9
@@ -139,20 +143,33 @@ void setupSensors(){
 
 unsigned long sensorTimeForward;
 void forwardSensorInterrupt(){
+  runFans();
   int sensorState = digitalRead(FORWARD_ULTRASONIC_SENSOR);
   if (sensorState == HIGH){
      sensorTimeForward = micros();
   }
   else{
     sensorTimeForward = micros()- sensorTimeForward;
-    if(state == MOVING && interruptSensorValue(sensorTimeForward)<FORWARD_ULTRASONIC_DISTANCE){
+    float calculatedDistance =  interruptSensorValue(sensorTimeForward);
+    if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE){
       state = APPROACHING_EDGE;
+    }
+    else if(state == FINDING_EDGE && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE ){
+       motorDirection=!motorDirection;
+       state = MOVING_TO_MOVING;
+    }
+    else if (state == RETURN_TO_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_RETURN_DISTANCE){
+      state=ORIENTING_AFTER_SEPARATOR;
+    }
+     else if (state == CROSSING_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_STOP_DISTANCE){
+      state = ORIENTING_AFTER_SEPARATOR;
     }
   }
 }
 
 unsigned long sensorTimeBackward;
 void backwardSensorInterrupt(){
+  runFans();
   int sensorState = digitalRead(BACKWARD_ULTRASONIC_SENSOR);
   if (sensorState == HIGH){
      sensorTimeBackward = micros();
@@ -183,7 +200,7 @@ float interruptSensorValue(unsigned long durationTime){
      turn LED OFF to indicate successful reading. */
   //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
-  // Serial.println("ultrasonic " + String(distance)+ " cm");
+   //Serial.println("ultrasonic " + String(distance)+ " cm");
    return distance;
 }
 
@@ -209,6 +226,9 @@ void loop() {
   //Serial.println(states(state));
   checkSensorsForStateChange();
  // ledDisplayState();
+ if(state != STOP && state!=CALIBRATING){
+  runFans();
+ }
   switch (state) {
     case CALIBRATING:
       stopFans();
@@ -324,39 +344,27 @@ void runMotorsFast(){
 void turningProcedure(){
   if(motorDirection == FORWARD){
     turnRight(HIGH_SPEED);
-    delay(50);
-    turnRight(HIGH_SPEED);
   }
   else{
-    turnLeft(HIGH_SPEED);
-    delay(50);
     turnLeft(HIGH_SPEED);
   }
 }
 
 void turningProcedureReverse(){
-  if(motorDirection == FORWARD){
-    turnRight(HIGH_SPEED);
-    delay(50);
+  if(motorDirection == BACKWARD){
     turnRight(HIGH_SPEED);
   }
   else{
-    turnLeft(HIGH_SPEED);
-    delay(50);
     turnLeft(HIGH_SPEED);
   }
 }
 
 void orientationProcedure(){
   if(motorDirection == BACKWARD){
-  turnRight(HIGH_SPEED);
-  delay(50);
-  turnRight(HIGH_SPEED);
+    turnRight(MAX_SPEED);
   } 
   else{
-    turnLeft(HIGH_SPEED);
-    delay(50);
-    turnLeft(HIGH_SPEED);
+    turnLeft(MAX_SPEED);
   }
 }
 
@@ -432,15 +440,16 @@ void checkSensorsForStateChange(){
 //   }
 }
 void checkReturnToSeparator(){
-   if(motorDirection == BACKWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
-       state=ORIENTING_AFTER_SEPARATOR;
-      }
-   }
-   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
-        state=ORIENTING_AFTER_SEPARATOR;
-      }
-   }
+  sendTrig();
+//   if(motorDirection == BACKWARD){
+//      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
+//       state=ORIENTING_AFTER_SEPARATOR;
+//      }
+//   }
+//   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
+//        state=ORIENTING_AFTER_SEPARATOR;
+//      }
+  }
 
 
 void checkForObstacle(){
@@ -485,9 +494,13 @@ void checkForObstacleStop(){
 }
 
 void checkOrientationTurnCompleted(){
-  turnDegrees(DEGREE_TURN);
+  float degrees_turned = turnDegrees(DEGREE_TURN);
+  turningProcedureReverse();
+ // if(degrees_turned-DEGREE_TURN > DEGREE_TURN){
+    turnDegrees(degrees_turned-DEGREE_TURN);
+  //}
   motorDirection=!motorDirection;
- state = MOVING_TO_MOVING;
+  state = MOVING_TO_MOVING;
 //  state= STOP;
 }
 
@@ -525,32 +538,34 @@ void checkOrientationProcedureAfter(){
 }
 
 void checkFindingEdge(){
- if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRASONIC_DISTANCE){
-       motorDirection=!motorDirection;
-       state = MOVING_TO_MOVING;
-      }
-   }
-   else if(motorDirection == BACKWARD){
-    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
-        motorDirection=!motorDirection;
-        state = MOVING_TO_MOVING;
-      }
-   }
+  sendTrig();
+// if(motorDirection == FORWARD){
+//      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRASONIC_DISTANCE){
+//       motorDirection=!motorDirection;
+//       state = MOVING_TO_MOVING;
+//      }
+//   }
+//   else if(motorDirection == BACKWARD){
+//    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
+//        motorDirection=!motorDirection;
+//        state = MOVING_TO_MOVING;
+//      }
+//   }
 }
   
 
 void isSeparatorCrossed(){
-  if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
-       // separator_crossed = true;
-        state = ORIENTING_AFTER_SEPARATOR;
-      }
-   }
-   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
-       // separator_crossed = true;
-        state = ORIENTING_AFTER_SEPARATOR;
-   }
+  sendTrig();
+//  if(motorDirection == FORWARD){
+//      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
+//       // separator_crossed = true;
+//        state = ORIENTING_AFTER_SEPARATOR;
+//      }
+//   }
+//   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
+//       // separator_crossed = true;
+//        state = ORIENTING_AFTER_SEPARATOR;
+//   }
 }
 
 void checkGoSignal(){
@@ -735,7 +750,7 @@ void IMULoopUpdate(){
                          myIMU.mx, myIMU.mz, myIMU.deltat);
 }
 
-void turnDegrees(int degrees1){
+float turnDegrees(int degrees1){
 //Watches IMU reading and return after turning by x degrees
   float z = 0;
  // Serial.println(abs(z));
@@ -746,6 +761,7 @@ void turnDegrees(int degrees1){
    //  Serial.println(z);
      delay(10);
   }
+  
  // Serial.println(z);
 }
 
