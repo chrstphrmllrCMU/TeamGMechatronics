@@ -4,7 +4,7 @@
 #include <MedianFilter.h>
 
 enum states {CALIBRATING, MOVING, MOVING_TO_MOVING, APPROACHING_EDGE, TURNING, STOP,ORIENTING_TO_SEPARATOR, CROSSING_SEPARATOR, ORIENTING_AFTER_SEPARATOR,RETURN_TO_SEPARATOR, FINDING_EDGE, FINISHED};
-int state = 0;
+volatile int state = 0;
 unsigned long MOVING_TIMER;
 
 //#DEFINE LEFT_ULTRASONIC_SENSOR
@@ -35,17 +35,17 @@ unsigned long MOVING_TIMER;
 #define BACKWARD 0 
 
 
-int motorDirection = FORWARD; //INITIAL DIRECTION
+volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 
 //UltraSonicPins
-#define FORWARD_ULTRASONIC_SENSOR 46
-#define BACKWARD_ULTRASONIC_SENSOR 47
+#define FORWARD_ULTRASONIC_SENSOR 18
+#define BACKWARD_ULTRASONIC_SENSOR 19
 #define LEFT_SIDE_ULTRASONIC_SENSOR 45
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRA_DISTANCE 10
-#define BACKWARD_ULTRA_DISTANCE 10
-#define LEFT_SIDE_ULTRA_DISTANCE 10 
+#define FORWARD_ULTRASONIC_DISTANCE 4
+#define BACKWARD_ULTRASONIC_DISTANCE 4
+#define LEFT_SIDE_ULTRA_DISTANCE 0 
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
@@ -114,10 +114,15 @@ void setupFans(){
 void setupSensors(){
 //  Serial.begin (9600);
   pinMode(trigPin, OUTPUT);
-  pinMode(FORWARD_ULTRASONIC_SENSOR, INPUT);
-  pinMode(BACKWARD_ULTRASONIC_SENSOR, INPUT);
+ 
+// pinMode(FORWARD_ULTRASONIC_SENSOR, INPUT);
+// pinMode(BACKWARD_ULTRASONIC_SENSOR, INPUT);
+// pinMode(LEFT_SIDE_ULTRASONIC_SENSOR, INPUT);
+
+  attachInterrupt(digitalPinToInterrupt(FORWARD_ULTRASONIC_SENSOR),forwardSensorInterrupt, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(BACKWARD_ULTRASONIC_SENSOR),backwardSensorInterrupt, CHANGE);
   pinMode(LEFT_SIDE_ULTRASONIC_SENSOR, INPUT);
-//  pinMode(RIGHT_SIDE_ULTRASONIC_SENSOR, INPUT);
+ 
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(SWITCH_PIN,INPUT);
@@ -130,6 +135,56 @@ void setupSensors(){
   pinMode(L2PinRight,OUTPUT);
 
 
+}
+
+unsigned long sensorTimeForward;
+void forwardSensorInterrupt(){
+  int sensorState = digitalRead(FORWARD_ULTRASONIC_SENSOR);
+  if (sensorState == HIGH){
+     sensorTimeForward = micros();
+  }
+  else{
+    sensorTimeForward = micros()- sensorTimeForward;
+    if(state == MOVING && interruptSensorValue(sensorTimeForward)<FORWARD_ULTRASONIC_DISTANCE){
+      state = APPROACHING_EDGE;
+    }
+  }
+}
+
+unsigned long sensorTimeBackward;
+void backwardSensorInterrupt(){
+  int sensorState = digitalRead(BACKWARD_ULTRASONIC_SENSOR);
+  if (sensorState == HIGH){
+     sensorTimeBackward = micros();
+  }
+  else{
+    sensorTimeBackward = micros()-sensorTimeBackward;
+    if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE){
+      state = APPROACHING_EDGE;
+    }
+  }
+}
+
+float interruptSensorValue(unsigned long durationTime){
+   durationTime = medianUltra.in(durationTime); //return median value after new sample processed
+
+   //Calculate the distance (in cm) based on the speed of sound.
+   distance = durationTime/58.2;
+   
+   if (distance >= maximumRange || distance <= minimumRange){
+     /* Send a negative number to computer and Turn LED ON 
+     to indicate "out of range" */
+//    Serial.println("ultrasonic " + String(echoPin)+ " " +"-1");
+     int infinity = 10000;
+     distance = infinity;
+   }
+   else {
+     /* Send the distance to the computer using Serial protocol, and
+     turn LED OFF to indicate successful reading. */
+  //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
+   }
+  // Serial.println("ultrasonic " + String(distance)+ " cm");
+   return distance;
 }
 
 void setupIMU(){
@@ -156,8 +211,6 @@ void loop() {
  // ledDisplayState();
   switch (state) {
     case CALIBRATING:
-      checkForCorner();
-      determineDirection();
       stopFans();
       break;
     case MOVING:
@@ -182,7 +235,6 @@ void loop() {
       orientationProcedure();
       break;
     case CROSSING_SEPARATOR:
-    //  adjustFanSpeed();
       runMotorsFast();
       break;
     case RETURN_TO_SEPARATOR:
@@ -213,18 +265,10 @@ void prepMotors(){
   }
 }
 
-void checkForCorner(){
-
-}
-
-void determineDirection(){
-
-}
 
 void stopFans(){
   firstESC.writeMicroseconds(FAN_START_VALUE);
   secondESC.writeMicroseconds(FAN_START_VALUE);
- 
 }
 
 void runMotors(){
@@ -250,7 +294,6 @@ void runMotorsReverse(){
 }
 
 void runFans(){
-
   firstESC.writeMicroseconds(FAN_MAX_VALUE);
   secondESC.writeMicroseconds(FAN_MAX_VALUE);
  
@@ -329,28 +372,11 @@ void orientationProcedureFlipped(){
 }
 
 void orientationProcedurePostCross(){
-  
   if(motorDirection == FORWARD){
-  turnRightFlipped(HIGH_SPEED);
+    turnRightFlipped(HIGH_SPEED);
   } 
   else{
     turnLeftFlipped(HIGH_SPEED);
-  }
-}
-
-
-void adjustFanSpeed(){
-
-}
-
-void adjustMotorSpeed(){
-  if(motorDirection == BACKWARD){
-    setLeftMotorForward(SLOW_SPEED);
-    setRightMotorForward(SLOW_SPEED);
-  }
-  else {
-    setLeftMotorBackward(SLOW_SPEED);
-    setRightMotorBackward(SLOW_SPEED);
   }
 }
 
@@ -367,7 +393,6 @@ void checkSensorsForStateChange(){
       checkGoSignal();
       break;
     case MOVING:
-      //checkCrossSeparatorReady();
       checkForObstacle();
       isFinished();
       break;
@@ -420,25 +445,29 @@ void checkReturnToSeparator(){
 
 
 void checkForObstacle(){
-  if(motorDirection == FORWARD){
-     if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
-       state = APPROACHING_EDGE;
-      }
-//      else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
+    sendTrig();
+//  if(motorDirection == FORWARD){
+//     if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRASONIC_DISTANCE){
+//       state = APPROACHING_EDGE;
+//      }
+//   }
+//   else if(motorDirection == BACKWARD){
+//     if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
+//        state = APPROACHING_EDGE;
+//      }
+//   else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
 //       state = ORIENTING_TO_SEPARATOR;
-//      }
-   }
-   else if(motorDirection == BACKWARD){
-     if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
-        state = APPROACHING_EDGE;
-      }
-//    else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
-//        state = ORIENTING_TO_SEPARATOR;
-//      }
-   }
-     if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
-       state = ORIENTING_TO_SEPARATOR;
-    }
+//    }
+}
+
+void sendTrig(){
+   digitalWrite(trigPin, LOW); 
+   delayMicroseconds(2); 
+  
+   digitalWrite(trigPin, HIGH);
+   delayMicroseconds(10); 
+   
+   digitalWrite(trigPin, LOW);
 }
 
 void isFinished(){
@@ -498,13 +527,13 @@ void checkOrientationProcedureAfter(){
 
 void checkFindingEdge(){
  if(motorDirection == FORWARD){
-      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRA_DISTANCE){
+      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRASONIC_DISTANCE){
        motorDirection=!motorDirection;
        state = MOVING_TO_MOVING;
       }
    }
    else if(motorDirection == BACKWARD){
-    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRA_DISTANCE){
+    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
         motorDirection=!motorDirection;
         state = MOVING_TO_MOVING;
       }
@@ -595,7 +624,7 @@ float getUltraSensorValue(int echoPin){
   //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
   }
-   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
+//   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    return distance;
 }
 

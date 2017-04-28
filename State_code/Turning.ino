@@ -85,28 +85,28 @@ void turnLeftFlipped(int speed){
 void setLeftMotorForward(int speed){
   digitalWrite(L1PinLeft,LOW);
   digitalWrite(L2PinLeft,HIGH);
-  analogWrite(dcEnablePin1,speed+GRAVITY_COMPENSATION_LEFT);
+  analogWrite(dcEnablePin1,speed);
   leftMotorDirection=FORWARD;
 }
 
 void setRightMotorForward(int speed){
   digitalWrite(L1PinRight,LOW);
   digitalWrite(L2PinRight,HIGH);
-  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION_RIGHT);
+  analogWrite(dcEnablePin2,speed);
   rightMotorDirection = FORWARD;
 }
 
 void setLeftMotorBackward(int speed){
   digitalWrite(L1PinLeft,HIGH);
   digitalWrite(L2PinLeft,LOW);
-  analogWrite(dcEnablePin1,speed+GRAVITY_COMPENSATION_LEFT);
+  analogWrite(dcEnablePin1,speed);
   leftMotorDirection=BACKWARD;
 }
 
 void setRightMotorBackward(int speed){
   digitalWrite(L1PinRight,HIGH);
   digitalWrite(L2PinRight,LOW);
-  analogWrite(dcEnablePin2,speed+GRAVITY_COMPENSATION_RIGHT);
+  analogWrite(dcEnablePin2,speed);
   leftMotorDirection=BACKWARD;
 }
 
