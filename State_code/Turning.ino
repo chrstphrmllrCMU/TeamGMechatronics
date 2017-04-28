@@ -73,12 +73,12 @@ void turnLeft(int speed){
 }
 
 void turnRightFlipped(int speed){
-  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
+  setLeftMotorForward(speed);                             //  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
   setRightMotorBackward(speed);
 }
 
 void turnLeftFlipped(int speed){
-   setLeftMotorBackward(speed-GRAVITY_COMPENSATION_LEFT);
+   setLeftMotorBackward(speed); //  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
    setRightMotorForward(speed);
 }
 

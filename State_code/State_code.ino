@@ -80,7 +80,7 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 
 int degrees1 = 0;
 
-#define DEGREE_TURN 5
+#define DEGREE_TURN 1
 #define DEGREE_ORIENT 30
 
 /*
@@ -322,7 +322,7 @@ void runMotorsFast(){
 }
 
 void turningProcedure(){
-  if(motorDirection == BACKWARD){
+  if(motorDirection == FORWARD){
     turnRight(HIGH_SPEED);
     delay(50);
     turnRight(HIGH_SPEED);
@@ -348,7 +348,6 @@ void turningProcedureReverse(){
 }
 
 void orientationProcedure(){
-  
   if(motorDirection == BACKWARD){
   turnRight(HIGH_SPEED);
   delay(50);
