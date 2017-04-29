@@ -48,7 +48,7 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 
 #define FORWARD_ULTRASONIC_DISTANCE 4
 #define BACKWARD_ULTRASONIC_DISTANCE 4
-#define LEFT_SIDE_ULTRA_DISTANCE 0 
+#define LEFT_SIDE_ULTRA_DISTANCE 0
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
@@ -68,7 +68,7 @@ int ledState;
 #define CROSSING_BLINK_DELAY 5000
 #define LED_PIN 13
 
-#define SWITCH_PIN 26
+#define SWITCH_PIN 11
 
 int currentDirection = 1;
 //IMU REQeUIREMENTS
@@ -82,6 +82,9 @@ int intPin = 12;  // These can be changed, 2 and 3 are the Arduinos ext int pins
 //int myLed  = 13;  // Set up pin 13 led for toggling
 
 int degrees1 = 0;
+
+bool firstPass=true;
+bool passDone = false;
 
 #define DEGREE_TURN 3
 #define DEGREE_ORIENT 30
@@ -130,6 +133,7 @@ void setupSensors(){
   pinMode(LED_BUILTIN, OUTPUT);
 
   pinMode(SWITCH_PIN,INPUT);
+  digitalWrite(SWITCH_PIN,HIGH);
   pinMode(L1PinLeft,OUTPUT);
   pinMode(dcEnablePin1,OUTPUT);
   pinMode(L2PinLeft,OUTPUT);
@@ -151,8 +155,12 @@ void forwardSensorInterrupt(){
   else{
     sensorTimeForward = micros()- sensorTimeForward;
     float calculatedDistance =  interruptSensorValue(sensorTimeForward);
-    if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE){
+    if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && (firstPass || passDone)){
       state = APPROACHING_EDGE;
+    }
+     else if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone){
+      Serial.println("LEFT SENSOR FIRE");
+      state = ORIENTING_TO_SEPARATOR;
     }
     else if(state == FINDING_EDGE && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE ){
        motorDirection=!motorDirection;
@@ -176,8 +184,24 @@ void backwardSensorInterrupt(){
   }
   else{
     sensorTimeBackward = micros()-sensorTimeBackward;
-    if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE){
+    float calculatedDistance =  interruptSensorValue(sensorTimeBackward);
+    if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && (firstPass || passDone)){
       state = APPROACHING_EDGE;
+    }
+    else if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone){
+      Serial.println("LEFT SENSOR FIRE");
+      passDone = true;
+      state = ORIENTING_TO_SEPARATOR;
+    }
+    else if(state == FINDING_EDGE && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE ){
+       motorDirection=!motorDirection;
+       state = MOVING_TO_MOVING;
+    }
+    else if (state == RETURN_TO_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_RETURN_DISTANCE){
+      state=ORIENTING_AFTER_SEPARATOR;
+    }
+     else if (state == CROSSING_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_STOP_DISTANCE){
+      state = ORIENTING_AFTER_SEPARATOR;
     }
   }
 }
@@ -200,7 +224,7 @@ float interruptSensorValue(unsigned long durationTime){
      turn LED OFF to indicate successful reading. */
   //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
-   //Serial.println("ultrasonic " + String(distance)+ " cm");
+   Serial.println("ultrasonic " + String(distance)+ " cm");
    return distance;
 }
 
@@ -224,11 +248,11 @@ void setupIMU(){
 
 void loop() {
   //Serial.println(states(state));
-  checkSensorsForStateChange();
- // ledDisplayState();
- if(state != STOP && state!=CALIBRATING){
+  if(state != STOP && state!=CALIBRATING){
   runFans();
  }
+  checkSensorsForStateChange();
+ // ledDisplayState();
   switch (state) {
     case CALIBRATING:
       stopFans();
@@ -255,7 +279,7 @@ void loop() {
       orientationProcedure();
       break;
     case CROSSING_SEPARATOR:
-      runMotorsFast();
+      runMotors();
       break;
     case RETURN_TO_SEPARATOR:
       runMotorsReverse();
@@ -463,9 +487,11 @@ void checkForObstacle(){
 //     if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
 //        state = APPROACHING_EDGE;
 //      }
-//   else if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE){
-//       state = ORIENTING_TO_SEPARATOR;
-//    }
+    if(getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR) < LEFT_SIDE_ULTRA_DISTANCE && firstPass){
+       Serial.println("LEFT SENSOR FIRE");
+       state=APPROACHING_EDGE;
+       
+    }
 }
 
 void sendTrig(){
@@ -505,16 +531,26 @@ void checkOrientationTurnCompleted(){
 }
 
 void checkOrientationProcedure(){
-  turnDegrees(DEGREE_ORIENT);
   if(motorDirection == BACKWARD){
-    setLeftMotorForward(HIGH_SPEED);
-    setRightMotorForward(HIGH_SPEED);
+    setLeftMotorForward(SLOW_SPEED+SLOW_SPEED/2);
+    setRightMotorForward(SLOW_SPEED-SLOW_SPEED/2);
   } 
   else if(motorDirection == FORWARD){
-    setLeftMotorBackward(HIGH_SPEED);
-    setRightMotorBackward(HIGH_SPEED);
+    setLeftMotorBackward(SLOW_SPEED+SLOW_SPEED/2);
+    setRightMotorBackward(SLOW_SPEED-SLOW_SPEED/2);
   }
-  delay(2500);
+  delay(1500);
+  orientationProcedure();
+  turnDegrees(DEGREE_ORIENT);
+  if(motorDirection == BACKWARD){
+    setLeftMotorForward(SLOW_SPEED);
+    setRightMotorForward(SLOW_SPEED);
+  } 
+  else if(motorDirection == FORWARD){
+    setLeftMotorBackward(SLOW_SPEED);
+    setRightMotorBackward(SLOW_SPEED);
+  }
+  delay(1500);
   orientationProcedureFlipped();
   turnDegrees(DEGREE_ORIENT+10); 
   state = CROSSING_SEPARATOR;
@@ -569,6 +605,11 @@ void isSeparatorCrossed(){
 }
 
 void checkGoSignal(){
+  if(checkSwitch()){
+    runFans();
+    delay(1000);
+    state= MOVING_TO_MOVING;
+  }
   if (Serial.available() > 0) {
     // read the incoming byte:
     int incomingByte = Serial.read();
