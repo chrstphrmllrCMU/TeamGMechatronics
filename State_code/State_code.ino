@@ -46,8 +46,8 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 #define LEFT_SIDE_ULTRASONIC_SENSOR 2
 #define trigPin 51 // Trigger Pin
 
-#define FORWARD_ULTRASONIC_DISTANCE 4
-#define BACKWARD_ULTRASONIC_DISTANCE 4
+#define FORWARD_ULTRASONIC_DISTANCE 3
+#define BACKWARD_ULTRASONIC_DISTANCE 3
 #define LEFT_SIDE_ULTRA_DISTANCE 16
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
@@ -87,7 +87,7 @@ bool firstPass=true;
 bool passDone = false;
 
 #define DEGREE_TURN 3
-#define DEGREE_ORIENT 30
+#define DEGREE_ORIENT 45
 
 /*
  * Fan Ciode
@@ -575,7 +575,7 @@ void checkOrientationProcedure(){
 //  delay(1500);
 //  orientationProcedure();
   turningProcedure();
-  turnDegrees(DEGREE_ORIENT+15);
+  turnDegrees(DEGREE_ORIENT);
   if(motorDirection == BACKWARD){
     setLeftMotorForward(HIGH_SPEED+20);
     setRightMotorForward(HIGH_SPEED+20);
