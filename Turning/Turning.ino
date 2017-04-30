@@ -1,5 +1,5 @@
 
-#define L1PinLeft 2
+#define L1PinLeft 12
 #define dcEnablePin1 3
 #define L2PinLeft 4
 
