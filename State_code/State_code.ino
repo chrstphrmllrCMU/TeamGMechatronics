@@ -48,7 +48,7 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 
 #define FORWARD_ULTRASONIC_DISTANCE 4
 #define BACKWARD_ULTRASONIC_DISTANCE 4
-#define LEFT_SIDE_ULTRA_DISTANCE 15
+#define LEFT_SIDE_ULTRA_DISTANCE 16
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
@@ -196,7 +196,7 @@ void backwardSensorInterrupt(){
       passDone = true;
       state = ORIENTING_TO_SEPARATOR;
     }
-    else if(state == FINDING_EDGE && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE ){
+    else if(state == FINDING_EDGE && calculatedDistance<BACKWARD_ULTRASONIC_DISTANCE ){
        motorDirection=!motorDirection;
        state = MOVING_TO_MOVING;
     }
@@ -270,7 +270,7 @@ void setupIMU(){
 }
 
 void loop() {
-  //Serial.println(states(state));
+ // Serial.println(states(state));
   if(state != STOP && state!=CALIBRATING){
   runFans();
  }
@@ -302,10 +302,10 @@ void loop() {
       orientationProcedure();
       break;
     case CROSSING_SEPARATOR:
-      runMotors();
+      runMotorsReverseStandard();
       break;
     case RETURN_TO_SEPARATOR:
-      runMotorsReverse();
+      runMotorsReverseStandard();
       break;
     case ORIENTING_AFTER_SEPARATOR:
       turningProcedure();
@@ -357,6 +357,17 @@ void runMotorsReverse(){
   else {
     setLeftMotorBackward(SLOW_SPEED);
     setRightMotorBackward(SLOW_SPEED);
+  }
+}
+
+void runMotorsReverseStandard(){
+  if(motorDirection == BACKWARD){
+    setLeftMotorForward(STANDARD_SPEED);
+    setRightMotorForward(STANDARD_SPEED);
+  }
+  else {
+    setLeftMotorBackward(STANDARD_SPEED);
+    setRightMotorBackward(STANDARD_SPEED);
   }
 }
 
@@ -630,7 +641,8 @@ void isSeparatorCrossed(){
 void checkGoSignal(){
   if(checkSwitch()){
     runFans();
-    delay(1000);
+    sendTrig(); 
+    delay(3000);
     state= MOVING_TO_MOVING;
   }
   if (Serial.available() > 0) {
@@ -638,7 +650,8 @@ void checkGoSignal(){
     int incomingByte = Serial.read();
     if (incomingByte == '1'){
       runFans();
-      delay(1000);
+      sendTrig();
+      delay(3000);
       state= MOVING_TO_MOVING;
     }
   }
