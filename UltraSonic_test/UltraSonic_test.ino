@@ -3,7 +3,7 @@
 //UltraSonicPins
 #define FORWARD_ULTRASONIC_SENSOR 18
 #define BACKWARD_ULTRASONIC_SENSOR 19
-#define LEFT_SIDE_ULTRASONIC_SENSOR 45
+#define LEFT_SIDE_ULTRASONIC_SENSOR 2
  #define RIGHT_SIDE_ULTRASONIC_SENSOR 13
 #define trigPin 51 // Trigger Pin
  float duration, distance; // Duration used to calculate distance
@@ -22,9 +22,9 @@ void setup() {
 }
 
 void loop() { 
-   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
-  getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
-  //  getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
+   //getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
+ // getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+    getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
    delay(500);
 }
 

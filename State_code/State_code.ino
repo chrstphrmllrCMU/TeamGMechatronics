@@ -56,7 +56,7 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 float duration, distance; // Duration used to calculate distance
 int maximumRange = 400; // Maximum range of sensor
 int minimumRange = 2; // Minimum range of sensor
-MedianFilter medianUltra(3,0);
+MedianFilter medianUltra(10,0);
 
 //Debuggin Delays + timer + state 
 unsigned long timerA; 
@@ -104,6 +104,7 @@ Servo firstESC, secondESC;
 int value = 0; // set values you need to zero
 
 bool separator_crossed = false;
+
 
 void setup() {
   // put your setup code here, to run once:
@@ -161,6 +162,7 @@ void forwardSensorInterrupt(){
     }
      else if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone){
       Serial.println("LEFT SENSOR FIRE2");
+      passDone=true;
       state = ORIENTING_TO_SEPARATOR;
     }
     else if(state == FINDING_EDGE && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE ){
@@ -190,7 +192,7 @@ void backwardSensorInterrupt(){
       state = APPROACHING_EDGE;
     }
     else if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone){
-      Serial.println("LEFT SENSOR FIRE");
+      Serial.println("LEFT SENSOR FIRE 2");
       passDone = true;
       state = ORIENTING_TO_SEPARATOR;
     }
@@ -215,7 +217,7 @@ void leftSensorInterrupt(){
      sensorTimeLeft = micros();
   }
   else{
-   sensorTimeBackward = micros()-sensorTimeLeft;
+   sensorTimeLeft = micros()-sensorTimeLeft;
    float calculatedDistance =  interruptSensorValue(sensorTimeLeft);
   if(state == MOVING && calculatedDistance < LEFT_SIDE_ULTRA_DISTANCE && firstPass){
        Serial.println("LEFT SENSOR FIRE");
@@ -536,6 +538,7 @@ void checkForObstacleStop(){
    }
 }
 
+
 void checkOrientationTurnCompleted(){
   float degrees_turned = turnDegrees(DEGREE_TURN);
   turningProcedureReverse();
@@ -546,6 +549,8 @@ void checkOrientationTurnCompleted(){
   state = MOVING_TO_MOVING;
 //  state= STOP;
 }
+
+
 
 void checkOrientationProcedure(){
 //  if(motorDirection == BACKWARD){
@@ -561,12 +566,12 @@ void checkOrientationProcedure(){
   turningProcedure();
   turnDegrees(DEGREE_ORIENT+15);
   if(motorDirection == BACKWARD){
-    setLeftMotorForward(HIGH_SPEED);
-    setRightMotorForward(HIGH_SPEED);
+    setLeftMotorForward(HIGH_SPEED+20);
+    setRightMotorForward(HIGH_SPEED+20);
   }
   else {
-    setLeftMotorBackward(HIGH_SPEED);
-    setRightMotorBackward(HIGH_SPEED);
+    setLeftMotorBackward(HIGH_SPEED+20);
+    setRightMotorBackward(HIGH_SPEED+20);
   }
   delay(1500);
 //  orientationProcedureFlipped();
@@ -823,4 +828,5 @@ float turnDegrees(int degrees1){
   
  // Serial.println(z);
 }
+
 
