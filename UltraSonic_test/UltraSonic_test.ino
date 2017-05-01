@@ -22,8 +22,8 @@ void setup() {
 }
 
 void loop() { 
-   //getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
- // getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
+  getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
+  getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
     getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
    delay(500);
 }

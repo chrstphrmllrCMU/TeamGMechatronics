@@ -48,7 +48,7 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 
 #define FORWARD_ULTRASONIC_DISTANCE 3
 #define BACKWARD_ULTRASONIC_DISTANCE 3
-#define LEFT_SIDE_ULTRA_DISTANCE 16
+#define LEFT_SIDE_ULTRA_DISTANCE 32
 
 #define CROSSING_SEPARATOR_STOP_DISTANCE 10 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 5
@@ -230,7 +230,7 @@ void leftSensorInterrupt(){
 }
 
 float interruptSensorValue(unsigned long durationTime){
-   durationTime = medianUltra.in(durationTime); //return median value after new sample processed
+   durationTime =durationTime; //return median value after new sample processed
 
    //Calculate the distance (in cm) based on the speed of sound.
    distance = durationTime/58.2;
@@ -270,7 +270,7 @@ void setupIMU(){
 }
 
 void loop() {
- // Serial.println(states(state));
+  //Serial.println(states(state));
   if(state != STOP && state!=CALIBRATING){
   runFans();
  }
@@ -493,6 +493,10 @@ void checkSensorsForStateChange(){
       state= STOP;
     }
    }
+   if(checkSwitch() && state!= CALIBRATING){
+      Serial.println("?");
+      state= STOP;
+   }
 //   if (getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR)<=20){
 //     state = STOP;
 //   }
@@ -577,12 +581,12 @@ void checkOrientationProcedure(){
   turningProcedure();
   turnDegrees(DEGREE_ORIENT);
   if(motorDirection == BACKWARD){
-    setLeftMotorForward(HIGH_SPEED+20);
-    setRightMotorForward(HIGH_SPEED+20);
+    setLeftMotorForward(HIGH_SPEED+25);
+    setRightMotorForward(HIGH_SPEED+25);
   }
   else {
-    setLeftMotorBackward(HIGH_SPEED+20);
-    setRightMotorBackward(HIGH_SPEED+20);
+    setLeftMotorBackward(HIGH_SPEED+25);
+    setRightMotorBackward(HIGH_SPEED+25);
   }
   delay(1500);
 //  orientationProcedureFlipped();
@@ -640,9 +644,11 @@ void isSeparatorCrossed(){
 
 void checkGoSignal(){
   if(checkSwitch()){
+    delay(1000);
     runFans();
     sendTrig(); 
-    delay(3000);
+    delay(2000);
+    Serial.println("Hello");
     state= MOVING_TO_MOVING;
   }
   if (Serial.available() > 0) {
@@ -675,7 +681,7 @@ boolean checkSwitch(){
   // the time
   if (reading == HIGH && previous == LOW && ((millis() - goTime) > debounce)) {
     goTime = millis(); 
-     previous = reading; 
+    previous = reading; 
     return true;  
   }
   previous = reading;
