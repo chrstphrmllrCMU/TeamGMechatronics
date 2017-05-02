@@ -50,8 +50,8 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 #define BACKWARD_ULTRASONIC_DISTANCE 3
 #define LEFT_SIDE_ULTRA_DISTANCE 32
 
-#define CROSSING_SEPARATOR_STOP_DISTANCE 10 
-#define CROSSING_SEPARATOR_RETURN_DISTANCE 5
+#define CROSSING_SEPARATOR_STOP_DISTANCE 20 
+#define CROSSING_SEPARATOR_RETURN_DISTANCE 10
 
 float duration, distance; // Duration used to calculate distance
 int maximumRange = 400; // Maximum range of sensor
@@ -85,6 +85,7 @@ int degrees1 = 0;
 
 bool firstPass=true;
 bool passDone = false;
+bool crossNext = false;
 
 #define DEGREE_TURN 3
 #define DEGREE_ORIENT 45
@@ -157,13 +158,13 @@ void forwardSensorInterrupt(){
   else{
     sensorTimeForward = micros()- sensorTimeForward;
     float calculatedDistance =  interruptSensorValue(sensorTimeForward);
-    if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && (firstPass || passDone)){
-      state = APPROACHING_EDGE;
-    }
-     else if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone){
+     if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone && crossNext){
       Serial.println("LEFT SENSOR FIRE2");
       passDone=true;
       state = ORIENTING_TO_SEPARATOR;
+    }
+    else if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE){
+      state = APPROACHING_EDGE;
     }
     else if(state == FINDING_EDGE && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE ){
        motorDirection=!motorDirection;
@@ -188,13 +189,13 @@ void backwardSensorInterrupt(){
   else{
     sensorTimeBackward = micros()-sensorTimeBackward;
     float calculatedDistance =  interruptSensorValue(sensorTimeBackward);
-    if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && (firstPass || passDone)){
-      state = APPROACHING_EDGE;
-    }
-    else if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone){
-      Serial.println("LEFT SENSOR FIRE 2");
+     if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone && crossNext){
+      Serial.println("LEFT SENSOR FIRE 2");   
       passDone = true;
       state = ORIENTING_TO_SEPARATOR;
+    }
+    else if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE){
+      state = APPROACHING_EDGE;
     }
     else if(state == FINDING_EDGE && calculatedDistance<BACKWARD_ULTRASONIC_DISTANCE ){
        motorDirection=!motorDirection;
@@ -223,7 +224,7 @@ void leftSensorInterrupt(){
        Serial.println("LEFT SENSOR FIRE");
        Serial.println(calculatedDistance);
        firstPass = false;
-       state=APPROACHING_EDGE;
+      // state=APPROACHING_EDGE;
        
     }
   }
@@ -303,9 +304,11 @@ void loop() {
       break;
     case CROSSING_SEPARATOR:
       runMotorsReverseStandard();
+      Serial.println("Here CROSS");
       break;
     case RETURN_TO_SEPARATOR:
-      runMotorsReverseStandard();
+      runMotors();
+      Serial.println("Yup");
       break;
     case ORIENTING_AFTER_SEPARATOR:
       turningProcedure();
@@ -544,10 +547,16 @@ void isFinished(){
 
 void checkForObstacleStop(){
    if(motorDirection == FORWARD){
+        if(!firstPass){
+          crossNext = true;
+        }
         state=TURNING;
         timerA = millis();
    }
    else if(motorDirection == BACKWARD){
+        if(!firstPass){
+          crossNext = true;
+        }
         state = TURNING;
         timerA = millis();
    }
@@ -595,17 +604,17 @@ void checkOrientationProcedure(){
 }
 
 void checkOrientationProcedureAfter(){
-  orientationProcedurePostCross();
-  turnDegrees(DEGREE_ORIENT);
-  if(motorDirection == FORWARD){
-    setLeftMotorForward(HIGH_SPEED);
-    setRightMotorForward(HIGH_SPEED);
-  } 
-  else {
-    setLeftMotorBackward(HIGH_SPEED);
-    setRightMotorBackward(HIGH_SPEED);
-  }
-  delay(1500);
+//  orientationProcedurePostCross();
+//  turnDegrees(DEGREE_ORIENT);
+//  if(motorDirection == FORWARD){
+//    setLeftMotorForward(HIGH_SPEED);
+//    setRightMotorForward(HIGH_SPEED);
+//  } 
+//  else {
+//    setLeftMotorBackward(HIGH_SPEED);
+//    setRightMotorBackward(HIGH_SPEED);
+//  }
+//  delay(1500);
   turningProcedureReverse();
   turnDegrees(DEGREE_ORIENT);
   state = FINDING_EDGE;
