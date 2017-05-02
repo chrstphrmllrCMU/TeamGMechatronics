@@ -50,7 +50,7 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 #define BACKWARD_ULTRASONIC_DISTANCE 3
 #define LEFT_SIDE_ULTRA_DISTANCE 32
 
-#define CROSSING_SEPARATOR_STOP_DISTANCE 20 
+#define CROSSING_SEPARATOR_STOP_DISTANCE 60 
 #define CROSSING_SEPARATOR_RETURN_DISTANCE 10
 
 float duration, distance; // Duration used to calculate distance
@@ -170,7 +170,7 @@ void forwardSensorInterrupt(){
        motorDirection=!motorDirection;
        state = MOVING_TO_MOVING;
     }
-    else if (state == RETURN_TO_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_RETURN_DISTANCE){
+    else if (state == RETURN_TO_SEPARATOR && motorDirection == FORWARD && calculatedDistance < CROSSING_SEPARATOR_RETURN_DISTANCE){
       state=ORIENTING_AFTER_SEPARATOR;
     }
      else if (state == CROSSING_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_STOP_DISTANCE){
@@ -201,7 +201,7 @@ void backwardSensorInterrupt(){
        motorDirection=!motorDirection;
        state = MOVING_TO_MOVING;
     }
-    else if (state == RETURN_TO_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_RETURN_DISTANCE){
+    else if (state == RETURN_TO_SEPARATOR && motorDirection==BACKWARD && calculatedDistance < CROSSING_SEPARATOR_RETURN_DISTANCE){
       state=ORIENTING_AFTER_SEPARATOR;
     }
      else if (state == CROSSING_SEPARATOR && calculatedDistance < CROSSING_SEPARATOR_STOP_DISTANCE){
@@ -616,7 +616,7 @@ void checkOrientationProcedureAfter(){
 //  }
 //  delay(1500);
   turningProcedureReverse();
-  turnDegrees(DEGREE_ORIENT);
+  turnDegrees(DEGREE_ORIENT+5);
   state = FINDING_EDGE;
 }
 
