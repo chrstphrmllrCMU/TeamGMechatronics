@@ -1,5 +1,3 @@
-//#include <ServoTimer2.h>
-
 #include <MPU9250.h>
 #include <quaternionFilters.h>
 
@@ -9,11 +7,6 @@ enum states {CALIBRATING, MOVING, MOVING_TO_MOVING, APPROACHING_EDGE, TURNING, S
 volatile int state = 0;
 unsigned long MOVING_TIMER;
 
-//#DEFINE LEFT_ULTRASONIC_SENSOR
-//#DEFINE RIGHT ULTRASONIC_SENSOR
-//#DEFINE TOP_ULTRASONIC_SENSOR
-//#DEFINE BOTTOM_ULTRASONIC_SENSOR
-//#DEFINE IMU_PIN
 /* Motor Pins */
 #define L1PinLeft 12
 #define dcEnablePin1 3 
@@ -56,7 +49,9 @@ volatile int motorDirection = FORWARD; //INITIAL DIRECTION
 float duration, distance; // Duration used to calculate distance
 int maximumRange = 400; // Maximum range of sensor
 int minimumRange = 2; // Minimum range of sensor
-MedianFilter medianUltra(10,0);
+MedianFilter forwardSensorMedian(5,INFINITY);
+MedianFilter backwardSensorMedian(5,INFINITY);
+MedianFilter leftSensorMedian(5,INFINITY);
 
 //Debuggin Delays + timer + state 
 unsigned long timerA; 
@@ -158,8 +153,8 @@ void forwardSensorInterrupt(){
   else{
     sensorTimeForward = micros()- sensorTimeForward;
     float calculatedDistance =  interruptSensorValue(sensorTimeForward);
+    calculatedDistance = forwardSensorMedian.in(calculatedDistance);
      if(state == MOVING && calculatedDistance<FORWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone && crossNext){
-      Serial.println("LEFT SENSOR FIRE2");
       passDone=true;
       state = ORIENTING_TO_SEPARATOR;
     }
@@ -189,8 +184,8 @@ void backwardSensorInterrupt(){
   else{
     sensorTimeBackward = micros()-sensorTimeBackward;
     float calculatedDistance =  interruptSensorValue(sensorTimeBackward);
-     if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone && crossNext){
-      Serial.println("LEFT SENSOR FIRE 2");   
+    calculatedDistance = backwardSensorMedian.in(calculatedDistance);
+     if(state == MOVING && interruptSensorValue(sensorTimeBackward)<BACKWARD_ULTRASONIC_DISTANCE && !firstPass && !passDone && crossNext){  
       passDone = true;
       state = ORIENTING_TO_SEPARATOR;
     }
@@ -220,9 +215,8 @@ void leftSensorInterrupt(){
   else{
    sensorTimeLeft = micros()-sensorTimeLeft;
    float calculatedDistance =  interruptSensorValue(sensorTimeLeft);
+   calculatedDistance = leftSensorMedian.in(calculatedDistance);
   if(state == MOVING && calculatedDistance < LEFT_SIDE_ULTRA_DISTANCE && firstPass){
-       Serial.println("LEFT SENSOR FIRE");
-       Serial.println(calculatedDistance);
        firstPass = false;
       // state=APPROACHING_EDGE;
        
@@ -239,16 +233,13 @@ float interruptSensorValue(unsigned long durationTime){
    if (distance >= maximumRange || distance <= minimumRange){
      /* Send a negative number to computer and Turn LED ON 
      to indicate "out of range" */
-//    Serial.println("ultrasonic " + String(echoPin)+ " " +"-1");
      int infinity = 10000;
      distance = infinity;
    }
    else {
      /* Send the distance to the computer using Serial protocol, and
      turn LED OFF to indicate successful reading. */
-  //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
    }
- //  Serial.println("ultrasonic " + String(distance)+ " cm");
    return distance;
 }
 
@@ -304,11 +295,9 @@ void loop() {
       break;
     case CROSSING_SEPARATOR:
       runMotorsReverseStandard();
-      Serial.println("Here CROSS");
       break;
     case RETURN_TO_SEPARATOR:
       runMotors();
-      Serial.println("Yup");
       break;
     case ORIENTING_AFTER_SEPARATOR:
       turningProcedure();
@@ -326,7 +315,7 @@ void prepMotors(){
   if(motorDirection == FORWARD){
     setLeftMotorForward(STANDARD_SPEED);
     setRightMotorForward(STANDARD_SPEED);  
-    delay(500); //FIX THIS
+    delay(500);
   }
   else{
     setLeftMotorBackward(STANDARD_SPEED);
@@ -462,7 +451,6 @@ void checkSensorsForStateChange(){
       break;
     case MOVING:
       checkForObstacle();
-      isFinished();
       break;
     case MOVING_TO_MOVING:
       timePrepMotors();
@@ -500,35 +488,14 @@ void checkSensorsForStateChange(){
       Serial.println("?");
       state= STOP;
    }
-//   if (getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR)<=20){
-//     state = STOP;
-//   }
 }
 void checkReturnToSeparator(){
   sendTrig();
-//   if(motorDirection == BACKWARD){
-//      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
-//       state=ORIENTING_AFTER_SEPARATOR;
-//      }
-//   }
-//   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_RETURN_DISTANCE){
-//        state=ORIENTING_AFTER_SEPARATOR;
-//      }
-  }
+}
 
 
 void checkForObstacle(){
     sendTrig();
-//  if(motorDirection == FORWARD){
-//     if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRASONIC_DISTANCE){
-//       state = APPROACHING_EDGE;
-//      }
-//   }
-//   else if(motorDirection == BACKWARD){
-//     if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
-//        state = APPROACHING_EDGE;
-//      }
-   
 }
 
 void sendTrig(){
@@ -539,10 +506,6 @@ void sendTrig(){
    delayMicroseconds(10); 
    
    digitalWrite(trigPin, LOW);
-}
-
-void isFinished(){
-
 }
 
 void checkForObstacleStop(){
@@ -566,27 +529,14 @@ void checkForObstacleStop(){
 void checkOrientationTurnCompleted(){
   float degrees_turned = turnDegrees(DEGREE_TURN);
   turningProcedureReverse();
- // if(degrees_turned-DEGREE_TURN > DEGREE_TURN){
-    turnDegrees(degrees_turned-DEGREE_TURN);
-  //}
+  turnDegrees(degrees_turned-DEGREE_TURN);
   motorDirection=!motorDirection;
   state = MOVING_TO_MOVING;
-//  state= STOP;
 }
 
 
 
 void checkOrientationProcedure(){
-//  if(motorDirection == BACKWARD){
-//    setLeftMotorForward(SLOW_SPEED+SLOW_SPEED/2);
-//    setRightMotorForward(SLOW_SPEED-SLOW_SPEED/2);
-//  } 
-//  else if(motorDirection == FORWARD){
-//    setLeftMotorBackward(SLOW_SPEED+SLOW_SPEED/2);
-//    setRightMotorBackward(SLOW_SPEED-SLOW_SPEED/2);
-//  }
-//  delay(1500);
-//  orientationProcedure();
   turningProcedure();
   turnDegrees(DEGREE_ORIENT);
   if(motorDirection == BACKWARD){
@@ -598,23 +548,10 @@ void checkOrientationProcedure(){
     setRightMotorBackward(HIGH_SPEED+25);
   }
   delay(1500);
-//  orientationProcedureFlipped();
-//  turnDegrees(DEGREE_ORIENT+10); 
   state = CROSSING_SEPARATOR;
 }
 
 void checkOrientationProcedureAfter(){
-//  orientationProcedurePostCross();
-//  turnDegrees(DEGREE_ORIENT);
-//  if(motorDirection == FORWARD){
-//    setLeftMotorForward(HIGH_SPEED);
-//    setRightMotorForward(HIGH_SPEED);
-//  } 
-//  else {
-//    setLeftMotorBackward(HIGH_SPEED);
-//    setRightMotorBackward(HIGH_SPEED);
-//  }
-//  delay(1500);
   turningProcedureReverse();
   turnDegrees(DEGREE_ORIENT+5);
   state = FINDING_EDGE;
@@ -622,42 +559,20 @@ void checkOrientationProcedureAfter(){
 
 void checkFindingEdge(){
   sendTrig();
-// if(motorDirection == FORWARD){
-//      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < FORWARD_ULTRASONIC_DISTANCE){
-//       motorDirection=!motorDirection;
-//       state = MOVING_TO_MOVING;
-//      }
-//   }
-//   else if(motorDirection == BACKWARD){
-//    if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < BACKWARD_ULTRASONIC_DISTANCE){
-//        motorDirection=!motorDirection;
-//        state = MOVING_TO_MOVING;
-//      }
-//   }
 }
   
 
 void isSeparatorCrossed(){
   sendTrig();
-//  if(motorDirection == FORWARD){
-//      if(getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
-//       // separator_crossed = true;
-//        state = ORIENTING_AFTER_SEPARATOR;
-//      }
-//   }
-//   else if(getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR) < CROSSING_SEPARATOR_STOP_DISTANCE){
-//       // separator_crossed = true;
-//        state = ORIENTING_AFTER_SEPARATOR;
-//   }
 }
 
 void checkGoSignal(){
+  //Start go signal delay 
   if(checkSwitch()){
     delay(1000);
     runFans();
     sendTrig(); 
     delay(2000);
-    Serial.println("Hello");
     state= MOVING_TO_MOVING;
   }
   if (Serial.available() > 0) {
@@ -700,38 +615,6 @@ boolean checkSwitch(){
 void timePrepMotors(){
     delay(TIME_PREP_MOTORS);
     state = MOVING;
-}
-
-float getUltraSensorValue(int echoPin){
-  for (int i =0; i<3; i++){
-   digitalWrite(trigPin, LOW); 
-   delayMicroseconds(2); 
-  
-   digitalWrite(trigPin, HIGH);
-   delayMicroseconds(10); 
-   
-   digitalWrite(trigPin, LOW);
-   duration = pulseIn(echoPin, HIGH);
-   duration = medianUltra.in(duration); //return median value after new sample processed
-
-   //Calculate the distance (in cm) based on the speed of sound.
-   distance = duration/58.2;
-   
-   if (distance >= maximumRange || distance <= minimumRange){
-     /* Send a negative number to computer and Turn LED ON 
-     to indicate "out of range" */
-//    Serial.println("ultrasonic " + String(echoPin)+ " " +"-1");
-     int infinity = 10000;
-     distance = infinity;
-   }
-   else {
-     /* Send the distance to the computer using Serial protocol, and
-     turn LED OFF to indicate successful reading. */
-  //   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
-   }
-  }
-//   Serial.println("ultrasonic " + String(echoPin)+ " " +String(distance)+ " cm");
-   return distance;
 }
 
 void ledDisplayState(){

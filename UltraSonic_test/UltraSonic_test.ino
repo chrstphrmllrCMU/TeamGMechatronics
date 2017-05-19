@@ -24,8 +24,8 @@ void setup() {
 void loop() { 
   getUltraSensorValue(BACKWARD_ULTRASONIC_SENSOR);
   getUltraSensorValue(FORWARD_ULTRASONIC_SENSOR);
-    getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
-   delay(500);
+  getUltraSensorValue(LEFT_SIDE_ULTRASONIC_SENSOR);
+  delay(500);
 }
 
 float getUltraSensorValue(int echoPin){
@@ -39,7 +39,6 @@ float getUltraSensorValue(int echoPin){
    digitalWrite(trigPin, LOW);
    duration = pulseIn(echoPin, HIGH);
    duration = medianUltra.in(duration); //return median value after new sample processed
- // }
     //Calculate the distance (in cm) based on the speed of sound.
    distance = duration/58.2;
    if (distance >= maximumRange || distance <= minimumRange){

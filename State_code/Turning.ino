@@ -1,67 +1,7 @@
-//
-//#define L1PinLeft 2
-//#define dcEnablePin1 3
-//#define L2PinLeft 4
-//
-//#define L1PinRight 5
-//#define dcEnablePin2 6
-//#define L2PinRight 7
-//
-//#define FORWARD 1
-//#define BACKWARD 0 
-
 int incomingByte = 0;   // for incoming serial data
 int leftMotorDirection,rightMotorDirection;
 
 
-//void setup() {
-//  // put your setup code here, to run once:
-//  Serial.begin(9600);     // opens serial port, sets data rate to 9600 bps
-//
-//  pinMode(L1PinLeft,OUTPUT);
-//  pinMode(dcEnablePin1,OUTPUT);
-//  pinMode(L2PinLeft,OUTPUT);
-//
-//  pinMode(L1PinRight,OUTPUT);
-//  pinMode(dcEnablePin2,OUTPUT);
-//  pinMode(L2PinRight,OUTPUT);
-//}
-//
-//void loop() {
-//  // put your main code here, to run repeatedly:
-//  readSerialMotors();
-//}
-
-//void readSerialMotors(){
-//  if (Serial.available() > 0) {
-//    // read the incoming byte:
-//    incomingByte = Serial.read();
-//    switch(incomingByte){
-//      case '1':
-//        setLeftMotorForward();
-//        setRightMotorForward();
-//        break;
-//      case '2':
-//        setLeftMotorBackward();
-//        setRightMotorForward();
-//        break;
-//     case '3':
-//        setLeftMotorForward();
-//        setRightMotorBackward();
-//        break;
-//     case '4':
-//        setLeftMotorBackward();
-//        setRightMotorBackward();
-//        break;
-//     case '5':
-//        stopMotors();
-//        break;
-//     case '6':
-//        reverseDirection();
-//        break;
-//    } 
-//  }
-//}
 void turnRight(int speed){
   setLeftMotorForward(speed);
   setRightMotorBackward(speed);
@@ -73,12 +13,12 @@ void turnLeft(int speed){
 }
 
 void turnRightFlipped(int speed){
-  setLeftMotorForward(speed);                             //  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
+  setLeftMotorForward(speed);                             
   setRightMotorBackward(speed);
 }
 
 void turnLeftFlipped(int speed){
-   setLeftMotorBackward(speed); //  setLeftMotorForward(speed-GRAVITY_COMPENSATION_LEFT);
+   setLeftMotorBackward(speed);
    setRightMotorForward(speed);
 }
 
@@ -109,20 +49,6 @@ void setRightMotorBackward(int speed){
   analogWrite(dcEnablePin2,speed);
   leftMotorDirection=BACKWARD;
 }
-
-//void reverseDirection(){
-//  if(leftMotorDirection==FORWARD){
-//    setLeftMotorBackward();
-//  }
-//  else if(leftMotorDirection==BACKWARD)
-//    setLeftMotorForward();
-//  if(rightMotorDirection==FORWARD){
-//    setRightMotorBackward();
-//  }
-//  else if(rightMotorDirection==BACKWARD){
-//    setRightMotorForward();
-//  }
-//}
 
 void stopMotors(){
   digitalWrite(L1PinLeft,HIGH);
