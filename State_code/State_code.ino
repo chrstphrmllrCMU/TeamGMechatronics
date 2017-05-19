@@ -116,17 +116,11 @@ void setupFans(){
 }
 
 void setupSensors(){
-//  Serial.begin (9600);
   pinMode(trigPin, OUTPUT);
- 
-// pinMode(FORWARD_ULTRASONIC_SENSOR, INPUT);
-// pinMode(BACKWARD_ULTRASONIC_SENSOR, INPUT);
-// pinMode(LEFT_SIDE_ULTRASONIC_SENSOR, INPUT);
 
   attachInterrupt(digitalPinToInterrupt(FORWARD_ULTRASONIC_SENSOR),forwardSensorInterrupt, CHANGE);
   attachInterrupt(digitalPinToInterrupt(BACKWARD_ULTRASONIC_SENSOR),backwardSensorInterrupt, CHANGE);
   attachInterrupt(digitalPinToInterrupt(LEFT_SIDE_ULTRASONIC_SENSOR),leftSensorInterrupt, CHANGE);
-  //pinMode(LEFT_SIDE_ULTRASONIC_SENSOR, INPUT);
  
   pinMode(LED_BUILTIN, OUTPUT);
 
